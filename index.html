@@ -68,18 +68,22 @@
           <h2>Ideas</h2>
         </div>
         <div class="actions">
-          <button class="btn" id="btnBulk">Pegar varias</button>
+          <a class="btn ghost" href="Plantilla_Ideas_LOGI.xlsx" download>Descargar plantilla</a>
+          <button class="btn" id="btnExcel">Subir Excel</button>
+          <input type="file" id="fileExcel" accept=".xlsx,.xls,.csv" hidden>
           <button class="btn primary" id="btnNew">+ Nueva idea</button>
         </div>
       </div>
 
       <div class="filters">
         <label class="f search">Buscar <input type="text" id="fText" placeholder="Título, texto o palabra clave"></label>
+        <label class="f">Lote <select id="fLote"></select></label>
         <label class="f">Pilar <select id="fPilar"></select></label>
         <label class="f">Temática <select id="fTematica"></select></label>
         <label class="f">Estado <select id="fEstado"></select></label>
         <label class="f">Ordenar <select id="fOrden">
-          <option value="puntaje">Mayor puntaje</option>
+          <option value="voto">Voto del equipo</option>
+          <option value="puntaje">Calculadora</option>
           <option value="numero">Número</option>
           <option value="reciente">Más recientes</option>
         </select></label>
@@ -179,8 +183,13 @@
         </div>
         <div class="panel">
           <h3>Listas desplegables</h3>
-          <p class="hint">Pilares, temáticas, formatos, objetivos y presentadores.</p>
+          <p class="hint">Pilares, temáticas, formatos, objetivos, presentadores y herramientas.</p>
           <div id="catalogos"></div>
+        </div>
+        <div class="panel">
+          <h3>Personas que votan</h3>
+          <p class="hint">Aparecen en el «Voto del equipo» de cada idea. Al quitar a alguien, sus votos se conservan.</p>
+          <div id="votantes"></div>
         </div>
       </div>
     </section>
@@ -197,56 +206,81 @@
     <div class="form-grid">
       <div class="fields">
         <label class="f">Idea central (título) <input type="text" name="titulo" required></label>
-        <label class="f">Texto base / borrador <textarea name="texto_base" rows="7"></textarea></label>
+        <div class="parecidas" id="parecidas" hidden></div>
+        <label class="f">Guion / texto base <textarea name="texto_base" rows="6"></textarea></label>
+        <label class="f">Texto en pantalla (una línea por texto: «0:04 10 PEDIDOS») <textarea name="texto_pantalla" rows="3"></textarea></label>
         <div class="row2">
-          <label class="f">Pilar <select name="pilar" data-cat="pilar"></select></label>
+          <label class="f">Lote <select name="lote_id"></select></label>
+          <label class="f">Origen <select name="origen"><option value="manual">Manual</option><option value="ia">Con IA</option><option value="referencia">Referencia viral</option></select></label>
+        </div>
+        <div class="row2">
+          <label class="f">Pilar <select name="pilar" data-cat="pilar" required></select></label>
           <label class="f">Temática <select name="tematica" data-cat="tematica"></select></label>
         </div>
         <div class="row2">
+          <label class="f">Herramienta WIL360 <select name="herramienta" data-cat="herramienta"></select></label>
           <label class="f">Presentador <select name="presentador" data-cat="presentador"></select></label>
-          <label class="f">Origen <select name="origen"><option value="manual">Manual</option><option value="ia">Con IA</option></select></label>
         </div>
         <label class="f">Referencia viral (link) <input type="url" name="referencia_url" placeholder="https://"></label>
         <label class="f">Contexto adicional (locación, utilería) <input type="text" name="contexto"></label>
         <label class="f">Palabras clave <input type="text" name="palabras_clave"></label>
       </div>
 
-      <div class="calc">
-        <h3>Calculadora de Viralidad</h3>
-        <p class="hint">Marca Sí o No en cada criterio y elige el formato.</p>
-        <div id="crits"></div>
-        <label class="f" style="margin-top:10px">Formato <select name="formato" data-cat="formato"></select></label>
-        <div class="total"><span>Puntaje</span><div><b id="calcTotal">0</b> <span id="calcMax"></span></div></div>
-        <div class="meter"><i id="calcBar" style="width:0"></i></div>
+      <div class="side">
+        <div class="calc">
+          <h3>Voto del equipo</h3>
+          <p class="hint" id="votoProm">Sin votos</p>
+          <div id="votos"></div>
+        </div>
+        <div class="calc">
+          <h3>Calculadora de Viralidad</h3>
+          <p class="hint">Marca Sí o No en cada criterio y elige el formato.</p>
+          <div id="crits"></div>
+          <label class="f" style="margin-top:10px">Formato <select name="formato" data-cat="formato"></select></label>
+          <div class="total"><span>Puntaje</span><div><b id="calcTotal">0</b> <span id="calcMax"></span></div></div>
+          <div class="meter"><i id="calcBar" style="width:0"></i></div>
+        </div>
+        <div class="calc">
+          <h3>Nivel de conciencia</h3>
+          <p class="hint" id="nivelSug"></p>
+          <div class="niveles" id="niveles"></div>
+          <p class="hint" style="margin:10px 0 0">Para crecer: niveles 0–1. Las herramientas de WIL360 suelen ser 3–4.</p>
+        </div>
       </div>
     </div>
     <div class="dlg-foot">
       <div class="right">
         <button class="btn small bad" type="button" id="btnDelete" hidden>Eliminar</button>
+        <button class="btn small" type="button" id="btnRescatar" hidden>Rescatar</button>
       </div>
       <div class="right">
         <button class="btn bad" type="button" id="btnDescartar" hidden>Descartar</button>
-        <button class="btn ok" type="button" id="btnAprobar" hidden>Aprobar para guion</button>
+        <button class="btn" type="button" id="btnEspera" hidden>En espera</button>
+        <button class="btn ok" type="button" id="btnCrearGuion" hidden>Crear guion</button>
+        <button class="btn ok" type="button" id="btnVerGuion" hidden>Ver guion</button>
         <button class="btn primary" type="submit" id="btnSave">Guardar</button>
       </div>
     </div>
   </form>
 </dialog>
 
-<!-- ============ Diálogo: pegar varias ============ -->
-<dialog id="dlgBulk">
-  <form class="cloud" id="bulkForm" method="dialog">
+<!-- ============ Diálogo: subir Excel ============ -->
+<dialog id="dlgExcel">
+  <form class="cloud" id="excelForm" method="dialog">
     <div class="dlg-head">
-      <h2>Pegar varias ideas</h2>
+      <h2>Subir ideas desde Excel</h2>
       <button class="x" type="button" data-close aria-label="Cerrar">×</button>
     </div>
-    <p style="color:var(--muted);margin-top:0">Una idea por línea. Después las calificas una por una.</p>
-    <textarea name="lineas" rows="12" placeholder="No necesitas un local para vender&#10;Tres pasos antes de importar de China&#10;…"></textarea>
-    <div class="row2" style="margin-top:12px">
-      <label class="f">Pilar para todas <select name="pilar" data-cat="pilar"></select></label>
-      <label class="f">Origen <select name="origen"><option value="ia">Con IA</option><option value="manual">Manual</option></select></label>
+    <p class="hint" id="impInfo"></p>
+    <label class="f" style="max-width:360px">Guardar en <select id="impLote"></select></label>
+    <p class="msg err" id="impAviso" hidden style="margin-top:12px"></p>
+    <div class="imp-wrap">
+      <table class="imp-tabla">
+        <thead><tr><th>Subir</th><th>Idea</th><th>Pilar · Temática</th><th>Votos</th></tr></thead>
+        <tbody id="impTabla"></tbody>
+      </table>
     </div>
-    <div class="dlg-foot"><span></span><button class="btn primary" type="submit">Agregar ideas</button></div>
+    <div class="dlg-foot"><span class="hint">Las ideas entran como «Nueva». Después se califican y votan en la web.</span><button class="btn primary" type="submit" id="impSubir">Subir</button></div>
   </form>
 </dialog>
 
@@ -264,6 +298,7 @@
 </dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="config.js"></script>
 <script src="app.js"></script>
 <script src="guiones.js"></script>

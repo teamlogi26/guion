@@ -76,7 +76,7 @@ function barra(nombre, n, total) {
 
 // ---------- nuevo guion ----------
 $("#btnNuevoGuion").onclick = () => {
-  const ideas = L.state.ideas.filter(i => i.estado !== "descartada")
+  const ideas = L.state.ideas.filter(i => i.estado !== "descartada" && i.estado !== "en_guion" && i.guion_id == null)
     .sort((a, b) => (b.estado === "aprobada") - (a.estado === "aprobada") || Number(b.puntaje_total) - Number(a.puntaje_total));
   const sel = $("#ngIdea");
   sel.replaceChildren(...ideas.map(i => h("option", { value: i.id }, `${i.numero ?? ""} · ${i.titulo}${i.estado === "aprobada" ? "  ✓ aprobada" : ""}`)));
@@ -87,22 +87,37 @@ $("#nuevoGuionForm").addEventListener("submit", async e => {
   e.preventDefault();
   const idea = L.state.ideas.find(i => String(i.id) === $("#ngIdea").value);
   if (!idea) return;
+  $("#dlgNuevoGuion").close();
+  await crearGuion(idea);
+});
+
+// Crea un guion a partir de una idea, con el texto base como punto de partida
+async function crearGuion(idea) {
+  await cargarGuiones();
   const numero = Math.max(0, ...G.lista.map(g => g.numero || 0)) + 1;
   const parte = 1 + G.lista.filter(g => g.idea_id === idea.id).length;
   const { data, error } = await sb.from("guion").insert({
     idea_id: idea.id, parte, numero, titulo: idea.titulo, objetivo: null, estado: "pendiente", locacion: "Oficina / estudio"
   }).select().single();
   if (error) return fallo(error, "crear el guion");
+  // Reparte el texto base como punto de partida: 1.ª línea → gancho, última → CTA, el resto → historia
+  const lineas = (idea.texto_base || "").split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+  const textos = lineas.length >= 3
+    ? [lineas[0], lineas.slice(1, -1).join(" "), "", lineas.at(-1)]
+    : [lineas[0] || "", lineas[1] || "", "", ""];
   const base = [["gancho", 0, 5], ["historia", 5, 18], ["moraleja", 18, 26], ["cta", 26, 30]];
   const { error: e2 } = await sb.from("bloque").insert(base.map(([tipo, a, b], i) => ({
-    guion_id: data.id, orden: i + 1, tipo, inicio_s: a, fin_s: b, dialogo: "", plano: "Medio corto (frontal)", camara: "Estática" })));
+    guion_id: data.id, orden: i + 1, tipo, inicio_s: a, fin_s: b, dialogo: textos[i],
+    texto_pantalla: i === 0 ? (idea.texto_pantalla || "") : "",
+    plano: "Medio corto (frontal)", camara: "Estática" })));
   if (e2) return fallo(e2, "crear las escenas");
   await sb.from("idea").update({ estado: "en_guion" }).eq("id", idea.id);
-  $("#dlgNuevoGuion").close();
-  toast("Guion creado");
+  toast("Guion creado. Revisa cómo quedó repartido el texto en las escenas.");
   await cargarGuiones();
   abrirEditor(data.id);
-});
+}
+L.crearGuion = crearGuion;
+L.abrirGuion = id => abrirEditor(id);
 
 // =====================================================================
 //  EDITOR
