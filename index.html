@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guiones LOGI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="glow" id="glow"></div>
+<canvas id="particles"></canvas>
+
+<!-- ============ Acceso ============ -->
+<section class="auth" id="auth" hidden>
+  <div class="auth-card cloud">
+    <div class="eyebrow">Guiones LOGI</div>
+    <h1 id="authTitle">Inicia sesión</h1>
+    <p class="sub" id="authSub">Solo para el equipo. Si no tienes cuenta, pide una invitación.</p>
+
+    <form id="loginForm">
+      <label class="f">Correo <input type="email" name="email" required autocomplete="email"></label>
+      <label class="f">Contraseña <input type="password" name="password" required autocomplete="current-password"></label>
+      <button class="btn primary" type="submit">Entrar</button>
+      <button class="linkbtn" type="button" id="toReset">Olvidé mi contraseña</button>
+    </form>
+
+    <form id="resetForm" hidden>
+      <label class="f">Correo <input type="email" name="email" required autocomplete="email"></label>
+      <button class="btn primary" type="submit">Enviar enlace</button>
+      <button class="linkbtn" type="button" id="toLogin">Volver</button>
+    </form>
+
+    <form id="newPassForm" hidden>
+      <label class="f">Nueva contraseña <input type="password" name="password" required minlength="8" autocomplete="new-password"></label>
+      <button class="btn primary" type="submit">Guardar contraseña</button>
+    </form>
+
+    <div id="authMsg" class="msg" hidden style="margin-top:14px"></div>
+  </div>
+</section>
+
+<!-- ============ App ============ -->
+<div id="app" hidden>
+  <header class="top">
+    <div class="strip">
+      <nav class="tabs" id="tabs" role="tablist">
+        <button role="tab" data-view="ideas" style="--d:0s">Ideas</button>
+        <button role="tab" data-view="guiones" style="--d:-.5s">Guiones</button>
+        <button role="tab" data-view="storyboard" style="--d:-1s">Storyboard</button>
+        <button role="tab" data-view="ajustes" style="--d:-1.5s">Ajustes</button>
+      </nav>
+      <div class="bar">
+        <h1>Guiones LOGI · <em>De la idea al storyboard</em></h1>
+        <div class="user"><span id="userEmail"></span><button class="btn small ghost" id="logout">Salir</button></div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Ideas -->
+    <section class="view cloud" id="view-ideas" hidden>
+      <div class="view-head">
+        <div>
+          <div class="eyebrow">Paso 1 · Banco y calificación</div>
+          <h2>Ideas</h2>
+        </div>
+        <div class="actions">
+          <button class="btn" id="btnBulk">Pegar varias</button>
+          <button class="btn primary" id="btnNew">+ Nueva idea</button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <label class="f search">Buscar <input type="text" id="fText" placeholder="Título, texto o palabra clave"></label>
+        <label class="f">Pilar <select id="fPilar"></select></label>
+        <label class="f">Temática <select id="fTematica"></select></label>
+        <label class="f">Estado <select id="fEstado"></select></label>
+        <label class="f">Ordenar <select id="fOrden">
+          <option value="puntaje">Mayor puntaje</option>
+          <option value="numero">Número</option>
+          <option value="reciente">Más recientes</option>
+        </select></label>
+        <label class="f umbral">Umbral <input type="number" id="fUmbral" step="0.5" min="0"></label>
+      </div>
+
+      <div class="stats" id="stats"></div>
+      <div class="list" id="list"></div>
+    </section>
+
+    <!-- Guiones -->
+    <section class="view cloud" id="view-guiones" hidden>
+      <div id="gLista">
+        <div class="view-head">
+          <div>
+            <div class="eyebrow">Pasos 3 a 6 · Brief, guion y edición</div>
+            <h2>Guiones</h2>
+          </div>
+          <div class="actions"><button class="btn primary" id="btnNuevoGuion">+ Nuevo guion</button></div>
+        </div>
+        <div class="list" id="gCards"></div>
+      </div>
+
+      <div id="gEditor" hidden>
+        <form id="guionForm">
+          <div class="view-head">
+            <div>
+              <button type="button" class="linkbtn" id="edVolver">← Todos los guiones</button>
+              <h2 style="margin-top:6px">Editar guion</h2>
+              <div class="ed-meta" id="edMeta"></div>
+            </div>
+            <div class="actions">
+              <span class="conteo" id="edConteo"></span>
+              <button type="button" class="btn" id="edStoryboard">Ver storyboard</button>
+              <button type="submit" class="btn primary">Guardar</button>
+            </div>
+          </div>
+
+          <div class="ed-top">
+            <label class="f t-wide">Título <input type="text" name="titulo" required></label>
+            <label class="f">Número <input type="number" name="numero" min="1"></label>
+            <label class="f">Objetivo <select name="objetivo"></select></label>
+            <label class="f">Estado <select name="estado"></select></label>
+            <label class="f">Duración máx. <select name="duracion_max_s"><option value="30">30 s</option><option value="45">45 s</option><option value="60">60 s</option></select></label>
+            <label class="f">Formato <input type="text" name="formato_grabacion" placeholder="1 toma en oficina + edición"></label>
+            <label class="f">Locación <input type="text" name="locacion"></label>
+            <label class="f">Iluminación <input type="text" name="iluminacion"></label>
+            <label class="f">Tono <input type="text" name="tono"></label>
+            <label class="f t-half">Ganchos alternativos (uno por línea) <textarea name="ganchos" rows="3"></textarea></label>
+            <label class="f t-half">Notas (una por línea) <textarea name="notas" rows="3"></textarea></label>
+          </div>
+
+          <h3 class="ed-sub">Escenas</h3>
+          <div id="edEscenas"></div>
+          <div class="ed-foot">
+            <button type="button" class="btn" id="edAgregar">+ Agregar escena</button>
+            <span class="sp"></span>
+            <button type="button" class="btn small bad" id="edBorrar">Eliminar guion</button>
+            <button type="submit" class="btn primary">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Storyboard -->
+    <section class="view cloud" id="view-storyboard" hidden>
+      <div class="view-head no-print">
+        <div>
+          <div class="eyebrow">Paso 7 · Para grabar y editar</div>
+          <h2>Storyboard</h2>
+        </div>
+        <div class="actions">
+          <select id="sbSelect" aria-label="Guion"></select>
+          <button class="btn" id="sbEditar">Editar guion</button>
+          <button class="btn" id="sbTodos">PDF de todos</button>
+          <button class="btn primary" id="sbImprimir">Imprimir / PDF</button>
+        </div>
+      </div>
+      <p class="hint no-print">Marca <b>Grabado</b> y <b>Exportado</b> en cada escena: se guarda al instante. Para el PDF, en la ventana de impresión elige «Guardar como PDF».</p>
+      <div id="sbHojas"></div>
+    </section>
+
+    <!-- Ajustes -->
+    <section class="view cloud" id="view-ajustes" hidden>
+      <div class="view-head">
+        <div>
+          <div class="eyebrow">Configuración del equipo</div>
+          <h2>Ajustes</h2>
+        </div>
+      </div>
+      <div class="settings">
+        <div class="panel">
+          <h3>Pesos de la Calculadora de Viralidad</h3>
+          <p class="hint">Al cambiar un peso, todos los puntajes se recalculan.</p>
+          <div id="pesos"></div>
+          <button class="btn primary" id="savePesos" style="margin-top:14px">Guardar pesos</button>
+        </div>
+        <div class="panel">
+          <h3>Listas desplegables</h3>
+          <p class="hint">Pilares, temáticas, formatos, objetivos y presentadores.</p>
+          <div id="catalogos"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- ============ Diálogo: idea ============ -->
+<dialog id="dlgIdea">
+  <form class="cloud" id="ideaForm" method="dialog">
+    <div class="dlg-head">
+      <h2 id="ideaTitle">Nueva idea</h2>
+      <button class="x" type="button" data-close aria-label="Cerrar">×</button>
+    </div>
+    <div class="form-grid">
+      <div class="fields">
+        <label class="f">Idea central (título) <input type="text" name="titulo" required></label>
+        <label class="f">Texto base / borrador <textarea name="texto_base" rows="7"></textarea></label>
+        <div class="row2">
+          <label class="f">Pilar <select name="pilar" data-cat="pilar"></select></label>
+          <label class="f">Temática <select name="tematica" data-cat="tematica"></select></label>
+        </div>
+        <div class="row2">
+          <label class="f">Presentador <select name="presentador" data-cat="presentador"></select></label>
+          <label class="f">Origen <select name="origen"><option value="manual">Manual</option><option value="ia">Con IA</option></select></label>
+        </div>
+        <label class="f">Referencia viral (link) <input type="url" name="referencia_url" placeholder="https://"></label>
+        <label class="f">Contexto adicional (locación, utilería) <input type="text" name="contexto"></label>
+        <label class="f">Palabras clave <input type="text" name="palabras_clave"></label>
+      </div>
+
+      <div class="calc">
+        <h3>Calculadora de Viralidad</h3>
+        <p class="hint">Marca Sí o No en cada criterio y elige el formato.</p>
+        <div id="crits"></div>
+        <label class="f" style="margin-top:10px">Formato <select name="formato" data-cat="formato"></select></label>
+        <div class="total"><span>Puntaje</span><div><b id="calcTotal">0</b> <span id="calcMax"></span></div></div>
+        <div class="meter"><i id="calcBar" style="width:0"></i></div>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <div class="right">
+        <button class="btn small bad" type="button" id="btnDelete" hidden>Eliminar</button>
+      </div>
+      <div class="right">
+        <button class="btn bad" type="button" id="btnDescartar" hidden>Descartar</button>
+        <button class="btn ok" type="button" id="btnAprobar" hidden>Aprobar para guion</button>
+        <button class="btn primary" type="submit" id="btnSave">Guardar</button>
+      </div>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ Diálogo: pegar varias ============ -->
+<dialog id="dlgBulk">
+  <form class="cloud" id="bulkForm" method="dialog">
+    <div class="dlg-head">
+      <h2>Pegar varias ideas</h2>
+      <button class="x" type="button" data-close aria-label="Cerrar">×</button>
+    </div>
+    <p style="color:var(--muted);margin-top:0">Una idea por línea. Después las calificas una por una.</p>
+    <textarea name="lineas" rows="12" placeholder="No necesitas un local para vender&#10;Tres pasos antes de importar de China&#10;…"></textarea>
+    <div class="row2" style="margin-top:12px">
+      <label class="f">Pilar para todas <select name="pilar" data-cat="pilar"></select></label>
+      <label class="f">Origen <select name="origen"><option value="ia">Con IA</option><option value="manual">Manual</option></select></label>
+    </div>
+    <div class="dlg-foot"><span></span><button class="btn primary" type="submit">Agregar ideas</button></div>
+  </form>
+</dialog>
+
+<!-- ============ Diálogo: nuevo guion ============ -->
+<dialog id="dlgNuevoGuion">
+  <form class="cloud" id="nuevoGuionForm" method="dialog" style="max-width:560px;margin:auto">
+    <div class="dlg-head">
+      <h2>Nuevo guion</h2>
+      <button class="x" type="button" data-close aria-label="Cerrar">×</button>
+    </div>
+    <label class="f">¿De qué idea sale? <select id="ngIdea" required></select></label>
+    <p style="color:var(--muted);font-size:13px">Se crea con 4 escenas (gancho, historia, moraleja y CTA) que luego editas.</p>
+    <div class="dlg-foot"><span></span><button class="btn primary" type="submit">Crear guion</button></div>
+  </form>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
+<script src="guiones.js"></script>
+</body>
+</html>
