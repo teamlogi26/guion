@@ -97,7 +97,7 @@ async function crearGuion(idea) {
   const numero = Math.max(0, ...G.lista.map(g => g.numero || 0)) + 1;
   const parte = 1 + G.lista.filter(g => g.idea_id === idea.id).length;
   const { data, error } = await sb.from("guion").insert({
-    idea_id: idea.id, parte, numero, titulo: idea.titulo, objetivo: null, estado: "pendiente", locacion: "Oficina / estudio"
+    idea_id: idea.id, parte, numero, titulo: idea.titulo, objetivo: null, estado: "pendiente", locacion: "Oficina / estudio", duracion_max_s: 60
   }).select().single();
   if (error) return fallo(error, "crear el guion");
   // Reparte el texto base como punto de partida: 1.ª línea → gancho, última → CTA, el resto → historia
@@ -117,6 +117,8 @@ async function crearGuion(idea) {
   abrirEditor(data.id);
 }
 L.crearGuion = crearGuion;
+L.cargarGuiones = cargarGuiones;
+L.G = G;
 L.abrirGuion = id => abrirEditor(id);
 
 // =====================================================================
@@ -136,7 +138,7 @@ async function abrirEditor(id) {
   f.numero.value = g.numero ?? "";
   f.objetivo.replaceChildren(h("option", { value: "" }, "—"), ...L.valores("objetivo").map(v => h("option", { value: v, selected: v === g.objetivo }, v)));
   f.estado.replaceChildren(...Object.entries(ESTADOS_G).map(([k, v]) => h("option", { value: k, selected: k === g.estado }, v)));
-  f.duracion_max_s.value = String(g.duracion_max_s || 30);
+  f.duracion_max_s.value = String(g.duracion_max_s || 60);
   f.locacion.value = g.locacion || "";
   f.iluminacion.value = g.iluminacion || "";
   f.tono.value = g.tono || "";
@@ -145,6 +147,7 @@ async function abrirEditor(id) {
   f.notas.value = (g.notas || []).join("\n");
   $("#edMeta").textContent = [g.pilar, g.tematica, g.formato].filter(Boolean).join(" · ");
   pintarEscenas();
+  L.pintarGanchoCta?.(g);
   scrollTo(0, 0);
 }
 $("#edVolver").onclick = () => vistaGuiones();
@@ -156,7 +159,7 @@ function actualizarConteo() {
   const max = Number($("#guionForm").duracion_max_s.value) || 30;
   const s = seg(total);
   const el = $("#edConteo");
-  el.textContent = `${total} palabras · ≈ ${s} s de ${max} s`;
+  el.textContent = `${total} palabras · ≈ ${s} s (curso: 50–60 s · máx. ${max} s)`;
   el.className = "conteo" + (s > max ? " warn" : "");
 }
 
@@ -333,7 +336,9 @@ function hoja(g, escenas, total) {
         (e.edicion || []).length ? [h("p", {}, h("b", {}, "Edición:")), h("ul", {}, e.edicion.map(x => h("li", {}, x)))] : null,
         textos.length ? [h("p", {}, h("b", {}, "Texto en pantalla:")), h("ul", { class: "tp" }, textos.map(x => h("li", {}, x)))] : null));
   });
+  const falta = [!g.gancho_id && "el gancho", !g.cta_id && "el CTA"].filter(Boolean);
   return h("article", { class: "sheet" },
+    falta.length ? h("p", { class: "sb-falta no-print" }, `Falta elegir ${falta.join(" y ")}. Hazlo en el editor del guion o en «Ganchos y CTA» antes de grabar.`) : null,
     h("header", { class: "sh-head" },
       h("div", { class: "sh-tag" }, h("b", {}, "STORYBOARD"), h("span", {}, `GUION ${g.numero ?? "–"} DE ${total}`)),
       h("h2", {}, g.titulo)),

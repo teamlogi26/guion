@@ -196,6 +196,7 @@ const TONOS = {
   ideas:   ["rgba(242,106,46,.16)", "rgba(30,64,175,.28)", 15, 20, 85, 80],
   guiones: ["rgba(245,166,35,.18)", "rgba(16,25,89,.40)", 80, 15, 20, 85],
   storyboard: ["rgba(229,37,53,.14)", "rgba(30,64,175,.30)", 50, 10, 50, 95],
+  ganchos: ["rgba(108,99,255,.20)", "rgba(245,166,35,.16)", 20, 80, 85, 15],
   ajustes: ["rgba(108,99,255,.20)", "rgba(242,106,46,.14)", 80, 20, 20, 85]
 };
 const vistas = { ideas: () => recargarIdeas() };   // cada pestaña registra aquí su función de carga
@@ -213,8 +214,8 @@ function irA(vista, sinCargar) {
 $$("#tabs button[data-view]").forEach(b => b.onclick = () => irA(b.dataset.view));
 
 // ---------- utilidades de ideas ----------
-const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-const nombreLote = n => { const d = new Date(); return `Lote ${n} · ${MESES[d.getMonth()]} ${d.getFullYear()}`; };
+const dosD = n => String(n).padStart(2, "0");
+const nombreLote = n => { const d = new Date(); return `LOTE ${n} · ${dosD(d.getDate())}/${dosD(d.getMonth() + 1)}/${d.getFullYear()}`; };
 const loteReciente = () => [...state.lotes].sort((a, b) => b.numero - a.numero)[0] || null;
 const siguienteNumero = () => Math.max(0, ...state.ideas.map(i => i.numero || 0)) + 1;
 const votosDe = id => state.votos.filter(v => v.idea_id === id);
@@ -245,8 +246,9 @@ function parecidas(titulo, texto, excluirId) {
   if (!tA.size) return [];
   return state.ideas.filter(i => i.id !== excluirId).map(i => {
     const tB = tokens(i.titulo), fB = tokens(i.titulo + " " + (i.texto_base || "").split(/\s+/).slice(0, 40).join(" "));
-    const comT = [...tA].filter(w => tB.has(w)).length / Math.max(1, Math.min(tA.size, tB.size));
-    const comF = [...fA].filter(w => fB.has(w)).length / Math.max(1, new Set([...fA, ...fB]).size);
+    const enComunT = [...tA].filter(w => tB.has(w)).length, enComunF = [...fA].filter(w => fB.has(w)).length;
+    const comT = enComunT >= 2 ? enComunT / Math.max(1, Math.min(tA.size, tB.size)) : 0;   // al menos 2 palabras en común
+    const comF = enComunF >= 3 ? enComunF / Math.max(1, new Set([...fA, ...fB]).size) : 0;
     return { i, s: Math.max(comT, comF * 1.6) };
   }).filter(x => x.s >= 0.5).sort((a, b) => b.s - a.s).slice(0, 3).map(x => x.i);
 }
@@ -556,7 +558,7 @@ $("#fileExcel").onchange = async e => {
   const col = {};
   for (const [k, re] of Object.entries(ALIAS)) { const j = cab.findIndex(c => re.test(c)); if (j >= 0) col[k] = j; }
   const votCols = state.votantes.map(v => [v, cab.findIndex(c => c.toLowerCase() === v.nombre.toLowerCase())]).filter(([, j]) => j >= 0);
-  const ignorados = cab.filter((c, j) => c && !Object.values(col).includes(j) && !votCols.some(([, k]) => k === j) && !/puntuaci|top|^#$|fecha|estado/i.test(c));
+  const ignorados = cab.filter((c, j) => c && !Object.values(col).includes(j) && !votCols.some(([, k]) => k === j) && !/puntuaci|promedio|top|^#$|fecha|estado|origen/i.test(c));
 
   importacion = filas.slice(hi + 1).map(r => {
     const g = k => col[k] != null ? String(r[col[k]] ?? "").trim() : "";

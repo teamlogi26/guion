@@ -377,3 +377,50 @@ body.imprimiendo .sh-foot { margin-top: 10px; padding-top: 8px; }
   .scores { grid-column: 2; }
   .usada { grid-template-columns: 30px 1fr; }
 }
+
+/* =================== Ganchos y CTA =================== */
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.subtabs button { border: 1px solid var(--line); background: rgba(255,255,255,.05); color: #cbd5e1; padding: 8px 14px; border-radius: 999px; cursor: pointer; font-weight: 500; }
+.subtabs button[aria-selected="true"] { background: var(--ink); color: var(--bg, #0a111e); border-color: var(--ink); }
+.pieza { display: grid; grid-template-columns: 74px 1fr auto; gap: 14px; align-items: center; padding: 14px 16px; border-radius: 16px; background: rgba(255,255,255,.04); border: 1px solid var(--line); cursor: pointer; transition: background .2s, transform .2s; }
+.pieza:hover { background: rgba(255,255,255,.07); transform: translateY(-1px); }
+.pz-clase { font: 800 11px/1 var(--font-display); letter-spacing: .1em; text-align: center; padding: 6px 0; border-radius: 8px; background: rgba(242,106,46,.16); color: var(--naranja-claro); }
+.pieza.cta .pz-clase { background: rgba(52,211,153,.14); color: #8ef0c6; }
+.pz-texto { margin: 0 0 8px; font-size: 16px; line-height: 1.4; color: #fff; }
+.biblio { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.tipo { padding: 14px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid var(--line); display: grid; gap: 6px; align-content: start; }
+.tipo.evitar { opacity: .5; }
+.tipo-head { display: flex; justify-content: space-between; align-items: baseline; }
+.tipo-head b { font: 700 15px/1.2 var(--font-display); }
+.tipo-head small { color: var(--muted); }
+.tipo p { margin: 0; font-size: 13px; color: #cbd5e1; }
+.tipo .tpl { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--naranja-claro); }
+.tipo .ej { font-style: italic; color: #e2e8f0; }
+.adv { color: #ffb3b9 !important; font-size: 12px; }
+.tipo .btn { justify-self: start; margin-top: 4px; }
+.pk-form { display: grid; grid-template-columns: 1fr 1.2fr 1.5fr .9fr auto; gap: 10px; align-items: end; padding: 14px; border-radius: 16px; background: var(--soft); border: 1px solid var(--line); margin-bottom: 14px; }
+.pk-tabla { border: 1px solid var(--line); border-radius: 12px; }
+.pk-tabla tr.inactiva td { opacity: .45; }
+.pk-tabla code { font-size: 12px; color: var(--naranja-claro); }
+.crit .auto { font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; }
+.crit .auto.si { background: rgba(52,211,153,.18); color: #8ef0c6; }
+.crit .auto.no { background: rgba(229,37,53,.16); color: #ffb3b9; }
+.pz-nota { float: right; color: var(--naranja-claro); }
+.tpl-hint { margin: -4px 0 0; }
+.resultado { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 10px; background: rgba(245,166,35,.1); font-size: 14px; }
+.ed-sub small { font: 400 13px/1 var(--font-main); color: var(--muted); }
+.gc-sel { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.gc-caja { min-width: 0; padding: 14px; border-radius: 14px; border: 1px solid var(--line); background: rgba(255,255,255,.04); display: grid; gap: 8px; align-content: start; }
+.gc-caja.ok { border-left: 4px solid var(--verde); }
+.gc-caja.falta { border-left: 4px solid var(--rojo); }
+.gc-caja > b { font: 700 13px/1 var(--font-display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.gc-caja p { margin: 0; font-size: 15px; color: #fff; }
+.gc-caja small { color: var(--muted); }
+.falta-txt { color: #ffb3b9 !important; }
+.gc-acc { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.gc-acc select { width: auto; flex: 1 1 160px; min-width: 0; padding: 6px 10px; font-size: 13px; }
+.sb-falta { background: #fde8ea; color: #9b1c27; border: 1px solid #f5b5bc; border-radius: 10px; padding: 10px 14px; margin: 0 0 14px; font-size: 13.5px; }
+@media (max-width: 820px) {
+  .pieza { grid-template-columns: 1fr; }
+  .gc-sel, .pk-form { grid-template-columns: 1fr; }
+}
