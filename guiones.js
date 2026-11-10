@@ -1,4 +1,4 @@
-/* ===== Guiones LOGI · Fase 2-3: editor de guiones y storyboard ===== */
+/* ===== ReelLab · Fase 2-3: editor de guiones y storyboard ===== */
 (() => {
 "use strict";
 const L = window.__logi;

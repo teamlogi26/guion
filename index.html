@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Guiones LOGI</title>
+<title>ReelLab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=14">
+<link rel="stylesheet" href="styles.css?v=18">
 </head>
 <body>
 <div class="glow" id="glow"></div>
@@ -16,7 +16,7 @@
 <!-- ============ Acceso ============ -->
 <section class="auth" id="auth" hidden>
   <div class="auth-card cloud">
-    <div class="eyebrow">Guiones LOGI</div>
+    <div class="eyebrow">ReelLab</div>
     <h1 id="authTitle">Inicia sesión</h1>
     <p class="sub" id="authSub">Solo para el equipo. Si no tienes cuenta, pide una invitación.</p>
 
@@ -49,19 +49,19 @@
 
 <!-- ============ App ============ -->
 <div id="app" hidden>
-  <header class="top">
-    <div class="strip">
+  <header class="top nav2">
+    <div class="nav-inner">
+      <div class="brand"><span class="logo">R</span><div><b>ReelLab</b><small>De la idea al storyboard</small></div></div>
       <nav class="tabs" id="tabs" role="tablist">
-        <button role="tab" data-view="ideas" style="--d:0s">Ideas</button>
-        <button role="tab" data-view="guiones" style="--d:-.5s">Guiones</button>
-        <button role="tab" data-view="ganchos" style="--d:-.75s">Ganchos y CTA</button>
-        <button role="tab" data-view="storyboard" style="--d:-1s">Storyboard</button>
-        <button role="tab" data-view="ajustes" style="--d:-1.5s">Ajustes</button>
-        <a class="tab-proceso" href="proceso.html" title="Proceso de creación de videos (curso Viralidad)">Proceso</a>
+        <button role="tab" data-view="ideas">Ideas</button>
+        <button role="tab" data-view="guiones">Guiones</button>
+        <button role="tab" data-view="ganchos">Ganchos y CTA</button>
+        <button role="tab" data-view="storyboard">Storyboard</button>
+        <button role="tab" data-view="ajustes">Ajustes</button>
       </nav>
-      <div class="bar">
-        <h1>Guiones LOGI · <em>De la idea al storyboard</em></h1>
-        <div class="user"><span id="userEmail"></span><button class="btn small ghost" id="cambiarUsuario" hidden>Cambiar usuario</button><button class="btn small ghost" id="logout">Salir</button></div>
+      <div class="nav-right">
+        <a class="tab-proceso" href="proceso.html" title="Proceso de creación de videos (curso Viralidad)">Proceso</a>
+        <div class="user"><span id="userEmail"></span><button class="btn small ghost" id="cambiarUsuario" hidden>Cambiar</button><button class="btn small ghost" id="logout">Salir</button></div>
       </div>
     </div>
   </header>
@@ -75,26 +75,37 @@
           <h2>Ideas</h2>
         </div>
         <div class="actions">
-          <a class="btn ghost" href="Plantilla_Ideas_LOGI.xlsx" download>Descargar plantilla</a>
+          <a class="btn ghost" href="Plantilla_Ideas_ReelLab.xlsx" download>Descargar plantilla</a>
           <button class="btn" id="btnExcel">Subir Excel</button>
           <input type="file" id="fileExcel" accept=".xlsx,.xls,.csv" hidden>
           <button class="btn primary" id="btnNew">+ Nueva idea</button>
         </div>
       </div>
 
-      <div class="filters">
-        <label class="f search">Buscar <input type="text" id="fText" placeholder="Título, texto o palabra clave"></label>
-        <label class="f">Lote <select id="fLote"></select></label>
-        <label class="f">Pilar <select id="fPilar"></select></label>
-        <label class="f">Temática <select id="fTematica"></select></label>
-        <label class="f">Estado <select id="fEstado"></select></label>
-        <label class="f">Ordenar <select id="fOrden">
-          <option value="voto">Voto del equipo</option>
-          <option value="puntaje">Calculadora</option>
-          <option value="numero">Número</option>
-          <option value="reciente">Más recientes</option>
-        </select></label>
-        <label class="f umbral">Umbral <input type="number" id="fUmbral" step="0.5" min="0"></label>
+      <div class="filters f2">
+        <div class="f2-top">
+          <label class="buscar"><span aria-hidden="true">⌕</span><input type="search" id="fText" placeholder="Buscar por título, texto o palabra clave"></label>
+          <div class="seg" id="segGuion" role="group" aria-label="Filtrar por guion">
+            <button type="button" data-v="" class="on">Todas</button>
+            <button type="button" data-v="sin">Sin guion</button>
+            <button type="button" data-v="con">Con GUION</button>
+          </div>
+          <input type="hidden" id="fGuion" value="">
+        </div>
+        <div class="f2-pills">
+          <label class="pill">Lote <select id="fLote"></select></label>
+          <label class="pill">Pilar <select id="fPilar"></select></label>
+          <label class="pill">Temática <select id="fTematica"></select></label>
+          <label class="pill">Estado <select id="fEstado"></select></label>
+          <label class="pill">Ordenar <select id="fOrden">
+            <option value="voto">Voto del equipo</option>
+            <option value="puntaje">Calculadora</option>
+            <option value="numero">Número</option>
+            <option value="reciente">Más recientes</option>
+          </select></label>
+          <label class="pill umbral" title="Puntaje mínimo de la calculadora para resaltar una idea">Umbral <input type="number" id="fUmbral" step="0.5" min="0"></label>
+          <button type="button" class="limpiar" id="fLimpiar">Limpiar filtros</button>
+        </div>
       </div>
 
       <div class="stats" id="stats"></div>
@@ -364,9 +375,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="config.js?v=14"></script>
-<script src="app.js?v=14"></script>
-<script src="guiones.js?v=14"></script>
-<script src="ganchos.js?v=14"></script>
+<script src="config.js?v=18"></script>
+<script src="app.js?v=18"></script>
+<script src="guiones.js?v=18"></script>
+<script src="ganchos.js?v=18"></script>
 </body>
 </html>

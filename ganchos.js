@@ -1,4 +1,4 @@
-/* ===== Guiones LOGI · Ganchos y CTA: banco, biblioteca, palabras clave y calificador ===== */
+/* ===== ReelLab · Ganchos y CTA: banco, biblioteca, palabras clave y calificador ===== */
 (() => {
 "use strict";
 const L = window.__logi;

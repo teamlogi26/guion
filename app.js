@@ -1,4 +1,4 @@
-/* ===== Guiones LOGI · Fase 1: acceso, banco de ideas y calificación ===== */
+/* ===== ReelLab · Fase 1: acceso, banco de ideas y calificación ===== */
 (() => {
 "use strict";
 
@@ -193,13 +193,14 @@ function filaVoto(vt, valor, onPick) {
 
 // ---------- datos ----------
 async function cargarTodo() {
-  const [cat, pesos, ideas, lotes, votantes, votos] = await Promise.all([
+  const [cat, pesos, ideas, lotes, votantes, votos, guiones] = await Promise.all([
     sb.from("catalogo").select("*").order("tipo").order("orden"),
     sb.from("peso_viralidad").select("*"),
     sb.from("idea_con_puntaje").select("*"),
     sb.from("lote").select("*").order("numero"),
     sb.from("votante").select("*").order("orden"),
-    sb.from("voto").select("*")
+    sb.from("voto").select("*"),
+    sb.from("guion").select("id, numero, idea_id")
   ]);
   if (cat.error) return fallo(cat.error, "cargar las listas");
   if (pesos.error) return fallo(pesos.error, "cargar los pesos");
@@ -211,17 +212,20 @@ async function cargarTodo() {
   state.lotes = lotes.data;
   state.votantes = votantes.data || [];
   state.votos = votos.data || [];
+  state.guiones = guiones.data || [];
   llenarSelects();
   pintarIdeas();
   pintarAjustes();
 }
 async function recargarIdeas() {
-  const [ideas, lotes, votos] = await Promise.all([
-    sb.from("idea_con_puntaje").select("*"), sb.from("lote").select("*").order("numero"), sb.from("voto").select("*")]);
+  const [ideas, lotes, votos, guiones] = await Promise.all([
+    sb.from("idea_con_puntaje").select("*"), sb.from("lote").select("*").order("numero"), sb.from("voto").select("*"),
+    sb.from("guion").select("id, numero, idea_id")]);
   if (ideas.error) return fallo(ideas.error, "cargar las ideas");
   state.ideas = ideas.data;
   if (!lotes.error) state.lotes = lotes.data;
   if (!votos.error) state.votos = votos.data;
+  if (!guiones.error) state.guiones = guiones.data;
   llenarSelects();
   pintarIdeas();
 }
@@ -316,34 +320,51 @@ const resumenIdea = i => {
 
 // ---------- lista de ideas ----------
 $("#fUmbral").value = getUmbral();
+// Filtro por guion: Todas / Sin guion / Con GUION
+$$("#segGuion button").forEach(b => b.onclick = () => {
+  $("#fGuion").value = b.dataset.v;
+  $$("#segGuion button").forEach(x => x.classList.toggle("on", x === b));
+  pintarIdeas();
+});
+$("#fLimpiar").onclick = () => {
+  ["fText", "fLote", "fPilar", "fTematica", "fEstado"].forEach(id => $("#" + id).value = "");
+  $("#fOrden").value = "voto";
+  $("#segGuion button").click();
+};
 ["fText", "fLote", "fPilar", "fTematica", "fEstado", "fOrden", "fUmbral"].forEach(id => $("#" + id).addEventListener("input", () => {
   if (id === "fUmbral") { try { localStorage.setItem("umbral", $("#fUmbral").value); } catch {} }
   pintarIdeas();
 }));
 
+const guionDe = i => (state.guiones || []).filter(g => g.idea_id === i.id).sort((a, b) => a.numero - b.numero)[0]
+  || ((i.estado === "en_guion" || i.guion_id != null) ? { id: i.guion_id, numero: null } : null);
 function tarjetaIdea(i, umbral, max) {
   const p = Number(i.puntaje_total), v = votosDe(i.id), prom = promedio(v);
   const alto = i.calificada && p >= umbral && i.estado !== "descartada";
   const mio = state.usuario && v.find(x => x.votante_id === state.usuario.id);
-  return h("article", { class: "idea" + (alto ? " top" : "") + (mio ? " votada" : "") + (i.estado === "descartada" ? " descartada" : ""), tabindex: 0,
+  return h("article", { class: "idea" + (alto ? " top" : "") + (mio ? " votada" : "") + (guionDe(i) ? " con-guion" : "") + (i.estado === "descartada" ? " descartada" : ""), tabindex: 0,
     onclick: () => abrirIdea(i), onkeydown: e => { if (e.key === "Enter") abrirIdea(i); } },
-    h("div", { class: "n" }, i.numero ?? "–"),
-    h("div", {},
-      h("h3", {}, i.titulo),
+    h("div", { class: "cuerpo" },
+      h("div", { class: "head" }, h("span", { class: "num" }, i.numero ?? "–"), h("h3", {}, i.titulo)),
       h("div", { class: "chips" },
+        guionDe(i) && h("span", { class: "chip guion-tag", title: "Abrir el guion", onclick: ev => { ev.stopPropagation(); window.__logi.abrirGuion?.(guionDe(i).id); } }, `GUION ${guionDe(i).numero ?? ""}`),
         mio && h("span", { class: "chip votaste" }, `✓ Votaste ★${mio.puntaje}`),
         i.pilar && h("span", { class: "chip " + pilarClass(i.pilar) }, i.pilar),
         i.tematica && h("span", { class: "chip" }, i.tematica),
         i.herramienta && h("span", { class: "chip" }, "🔧 " + i.herramienta),
         i.nivel_conciencia != null && h("span", { class: "chip nivel" }, "Nivel " + i.nivel_conciencia),
         i.rescatada_de && h("span", { class: "chip" }, "Rescatada"),
-        h("span", { class: "chip estado-" + i.estado }, ESTADOS[i.estado])),
+        !guionDe(i) && h("span", { class: "chip estado-" + i.estado }, ESTADOS[i.estado])),
       i.calificada && h("div", { class: "dots", title: "Criterios en Sí" }, CRITERIOS.map(c => h("i", { class: i[c] ? "on" : "" })))),
-    h("div", { class: "scores" },
-      h("div", { class: "score voto" + (prom != null && prom >= 4 ? " alto" : "") },
-        h("b", {}, prom != null ? "★ " + fmt(prom) : "★ –"), h("small", {}, `${v.length} voto${v.length === 1 ? "" : "s"}`)),
-      h("div", { class: "score" + (alto ? " alto" : "") + (i.calificada ? "" : " sin") },
-        h("b", {}, i.calificada ? fmt(p) : "–"), h("small", {}, i.calificada ? "calc. de " + fmt(max) : "sin calcular"))));
+    // Voto y calculadora como barras que se llenan
+    h("div", { class: "metricas" },
+      h("div", { class: "met-row" }, h("small", {}, `Voto del equipo · ${v.length} voto${v.length === 1 ? "" : "s"}`),
+        h("span", {}, h("b", {}, prom != null ? fmt(prom) : "–"), " / 5")),
+      h("div", { class: "barra voto" }, h("i", { style: `width:${prom != null ? prom / 5 * 100 : 0}%` })),
+      h("div", { class: "met-row" }, h("small", {}, i.calificada ? "Calculadora" : "Calculadora · sin calcular"),
+        h("span", {}, h("b", {}, i.calificada ? fmt(p) : "–"), ` / ${fmt(max)}`)),
+      h("div", { class: "barra puntos" + (alto ? " alto" : "") }, h("i", { style: `width:${i.calificada && max ? Math.min(100, p / max * 100) : 0}%` }),
+        umbral && max ? h("u", { style: `left:${Math.min(100, umbral / max * 100)}%`, title: `Umbral ${fmt(umbral)}` }) : null)));
 }
 
 function pintarIdeas() {
@@ -355,8 +376,9 @@ function pintarIdeas() {
 
   const coincide = i => (!fl || String(i.lote_id) === fl) && (!fp || i.pilar === fp) && (!ft || i.tematica === ft) &&
     (!q || [i.titulo, i.texto_base, i.palabras_clave].some(t => (t || "").toLowerCase().includes(q)));
-  const activas = state.ideas.filter(i => !enGuion(i) && coincide(i) && (!fe || i.estado === fe));
-  const usadas = state.ideas.filter(i => enGuion(i) && coincide(i));
+  const fg = $("#fGuion").value;
+  const activas = state.ideas.filter(i => coincide(i) && (!fe || (fe === "en_guion" ? enGuion(i) : i.estado === fe && !enGuion(i)))
+    && (!fg || (fg === "con" ? enGuion(i) : !enGuion(i))));
   const prom = i => promedio(votosDe(i.id)) ?? -1;
   const por = {
     voto: (a, b) => prom(b) - prom(a) || (b.puntaje_total - a.puntaje_total),
@@ -401,14 +423,6 @@ function pintarIdeas() {
     state.ideas.length ? "Cambia los filtros o la búsqueda." : "Sube tu Excel de ideas o agrega una con «+ Nueva idea»."));
   else cont.push(...bloques);
 
-  if (usadas.length) cont.push(h("details", { class: "ya-guion" },
-    h("summary", {}, `Ya en guion (${usadas.length})`),
-    h("div", { class: "list" }, usadas.sort((a, b) => (a.numero ?? 0) - (b.numero ?? 0)).map(i =>
-      h("div", { class: "usada" },
-        h("span", { class: "n" }, i.numero ?? "–"),
-        h("span", { class: "t" }, i.titulo, h("small", {}, ` · ${i.lote_nombre || "sin lote"}`)),
-        h("button", { class: "btn small", onclick: () => abrirIdea(i) }, "Ver idea"),
-        i.guion_id && h("button", { class: "btn small primary", onclick: () => window.__logi.abrirGuion?.(i.guion_id) }, "Ver guion"))))));
   $("#list").replaceChildren(...cont);
 }
 
