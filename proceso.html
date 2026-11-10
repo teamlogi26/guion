@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proceso de videos virales</title>
+<style>
+:root{
+  --bg:#f6f4f1; --panel:#ffffff; --panel2:#f1ede8; --text:#1d1b19; --muted:#6a645d; --line:#e2dcd4;
+  --accent:#e05a1f; --accent-soft:#fde8dd; --ok:#2f7d4f; --warn-bg:#fff4d6; --warn-text:#6b5200;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141210; --panel:#1e1b18; --panel2:#272320; --text:#f1ece6; --muted:#a59d94; --line:#36302b;
+    --accent:#f26a2e; --accent-soft:#3a2418; --ok:#6fc391; --warn-bg:#3a3018; --warn-text:#f0d58a;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141210; --panel:#1e1b18; --panel2:#272320; --text:#f1ece6; --muted:#a59d94; --line:#36302b;
+  --accent:#f26a2e; --accent-soft:#3a2418; --ok:#6fc391; --warn-bg:#3a3018; --warn-text:#f0d58a;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:28px 16px 64px}
+header h1{font-size:28px;line-height:1.2;margin:0 0 6px}
+header p{margin:0;color:var(--muted);max-width:760px}
+.note{background:var(--warn-bg);color:var(--warn-text);border-radius:10px;padding:10px 14px;margin:16px 0 0;font-size:13.5px}
+nav{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0;margin:18px 0 8px;border-bottom:1px solid var(--line);display:flex;gap:6px;overflow-x:auto;scrollbar-width:thin}
+nav a{flex:0 0 auto;text-decoration:none;color:var(--text);background:var(--panel);border:1px solid var(--line);padding:6px 11px;border-radius:999px;font-size:13px;white-space:nowrap}
+nav a b{color:var(--accent);margin-right:4px}
+nav a:hover{border-color:var(--accent)}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:18px 0 6px}
+.flow a{display:block;text-decoration:none;color:var(--text);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px;font-size:13px;position:relative}
+.flow a span{display:block;font-weight:700;color:var(--accent);font-size:18px}
+section{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 20px 14px;margin:18px 0;scroll-margin-top:70px}
+section > h2{margin:0 0 4px;font-size:21px;display:flex;align-items:baseline;gap:10px}
+section > h2 .n{background:var(--accent);color:#fff;border-radius:8px;font-size:14px;padding:2px 9px}
+.src{color:var(--muted);font-size:12.5px;margin:0 0 12px}
+h3{font-size:15.5px;margin:18px 0 6px}
+p{margin:6px 0}
+ul,ol{margin:6px 0;padding-left:20px}
+li{margin:3px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.card{background:var(--panel2);border-radius:10px;padding:12px 13px}
+.card h4{margin:0 0 4px;font-size:14px}
+.card p{margin:0;font-size:13.5px;color:var(--muted)}
+.card p b, .card p strong{color:var(--text)}
+.tag{display:inline-block;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:12px;padding:1px 8px;border-radius:999px;margin-bottom:4px}
+.tbl{overflow-x:auto;margin:8px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:520px}
+th,td{text-align:left;vertical-align:top;padding:7px 9px;border-bottom:1px solid var(--line)}
+th{background:var(--panel2);font-weight:600}
+.steps{counter-reset:s;list-style:none;padding:0}
+.steps li{counter-increment:s;position:relative;padding:6px 0 6px 34px}
+.steps li::before{content:counter(s);position:absolute;left:0;top:6px;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:12.5px;display:flex;align-items:center;justify-content:center}
+.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+.timeline div{background:var(--panel2);border-top:4px solid var(--accent);border-radius:8px;padding:10px;font-size:13px}
+.timeline div b{display:block;font-size:14px}
+.hooks{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;margin:6px 0 4px}
+.hooks div{background:var(--panel2);border-radius:8px;padding:7px 9px;font-size:12.8px;color:var(--muted)}
+.hooks div b{color:var(--text);display:block;font-size:13.3px}
+.key{border-left:3px solid var(--accent);padding:4px 0 4px 12px;margin:10px 0;font-weight:500}
+.ok{color:var(--ok);font-weight:600}
+footer{color:var(--muted);font-size:12.5px;margin-top:26px}
+@media (max-width:640px){
+  header h1{font-size:23px}
+  section{padding:16px 14px 10px}
+  .timeline{grid-template-columns:1fr 1fr}
+}
+nav a.volver{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
+nav a.volver:hover{filter:brightness(1.1)}
+@media print{nav{display:none} section{break-inside:avoid-page}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Proceso de creación de videos virales</h1>
+  <p>Resumen de la carpeta <b>2. Viralidad</b> del curso, solo con lo que sirve para crear un video: de la idea a la publicación. Al final de cada bloque se indica de qué módulo sale.</p>
+  <div class="note">Resumen hecho a partir del audio de las lecciones. Las cifras son afirmaciones del curso y no están verificadas. Lo que solo aparece en pantalla, como plantillas o menús, no está incluido.</div>
+</header>
+
+
+<nav>
+  <a class="volver" href="./">← Volver</a><a href="#base"><b>0</b>Bases</a><a href="#objetivo"><b>1</b>Objetivo</a><a href="#idea"><b>2</b>Idea</a><a href="#calculadora"><b>3</b>Calculadora</a><a href="#guion"><b>4</b>Guion y CTA</a><a href="#ganchos"><b>5</b>Ganchos</a><a href="#formatos"><b>6</b>Formatos</a><a href="#grabar"><b>7</b>Grabación</a><a href="#edicion"><b>8</b>Edición</a><a href="#publicar"><b>9</b>Publicación</a>
+</nav>
+
+<!-- 0 -->
+<section id="base">
+  <h2><span class="n">0</span>Bases: por qué un video se hace viral</h2>
+  <p class="src">Módulo A</p>
+  <p class="key">El algoritmo premia el video que retiene a más gente. Tu único control es hacer contenido que guste a más personas que el de tu competencia.</p>
+  <div class="grid">
+    <div class="card"><h4>Ratio de interés (RI)</h4><p>A cuántos se les muestra el video frente a cuántos les gusta. Solo cuenta en comparación con los videos que compiten contigo.</p></div>
+    <div class="card"><h4>Umbral mínimo de viralidad</h4><p>Cuánto debes abrir tu nicho hacia lo general para que pueda hacerse viral. Cambia según el sector y el país.</p></div>
+    <div class="card"><h4>Niveles de conciencia 0–4</h4><p>0: no sé que tengo un problema. 4: sé con qué producto se soluciona. Según el curso, el <b>90 %</b> de la audiencia está en los niveles 0 y 1, y ahí debe apuntar el video viral.</p></div>
+    <div class="card"><h4>Filtro 5-50</h4><p>¿Lo entiende un niño de <b>5</b> años? ¿Le interesa a <b>50</b> de cada 100 personas? Si no pasa, abre el nicho.</p></div>
+    <div class="card"><h4>Seguidor ideal ≠ cliente ideal</h4><p>En nichos cerrados atraes al seguidor amplio (pádel) y filtras hasta el cliente (lesiones de pádel). No hables del nicho exacto.</p></div>
+    <div class="card"><h4>Las 6 partes de un video</h4><p>Objetivo, idea, guion, formato, grabación y edición. Si una falla, el video no funciona.</p></div>
+  </div>
+  <h3>Secuencia de contenido por niveles</h3>
+  <ol class="steps">
+    <li><b>Abrir la mente:</b> mostrar que tienen un problema.</li>
+    <li><b>Explicar por qué</b> lo tienen.</li>
+    <li><b>Presentar la solución</b> (el método o el modelo de negocio).</li>
+    <li><b>Posicionarte</b> como la mejor persona para enseñarla.</li>
+    <li><b>Presentar el producto.</b></li>
+  </ol>
+</section>
+
+<!-- 1 -->
+<section id="objetivo">
+  <h2><span class="n">1</span>Definir el objetivo del video</h2>
+  <p class="src">Módulos A y G</p>
+  <p>Es lo primero: el objetivo cambia la estructura del guion.</p>
+  <div class="tbl"><table>
+    <tr><th>Objetivo</th><th>Peso sugerido</th><th>Qué necesita el video</th></tr>
+    <tr><td><b>Viralidad / branding</b></td><td>25 % (5 de 20)</td><td>Solo captar la atención. Más corto, sin enseñanza ni CTA.</td></tr>
+    <tr><td><b>Seguidores</b></td><td>25 % (5 de 20)</td><td>Gancho, retención y una <b>razón de peso</b> para seguir. «Sígueme para más» no lo es.</td></tr>
+    <tr><td><b>Venta</b></td><td>50 % (10 de 20)</td><td>Estructura viral, moraleja que te posicione como experto y CTA al embudo.</td></tr>
+  </table></div>
+  <p>El reparto es una guía y se adapta a cada cliente y momento: un lanzamiento, un producto nuevo o una etapa de crecimiento.</p>
+</section>
+
+<!-- 2 -->
+<section id="idea">
+  <h2><span class="n">2</span>Encontrar y estructurar la idea ganadora</h2>
+  <p class="src">Módulo C</p>
+  <p class="key">La idea es lo más importante del video: cómo se hace, qué se dice, dónde, quién sale y qué transmite.</p>
+  <h3>Tres fuentes de ideas</h3>
+  <div class="grid">
+    <div class="card"><span class="tag">≈20 %</span><h4>Referencias del mismo nicho</h4><p>Un video que ya es viral en tu sector. No se copia: se replantea con otro enfoque.</p></div>
+    <div class="card"><span class="tag">≈30 %</span><h4>Referencias de otro nicho</h4><p>Llevas a tu sector la idea, el formato, la forma de hablar o la edición. Ejemplo: «¿cuánto pagas de alquiler?» pasa a ser «¿cuánto gastas en comida al mes?».</p></div>
+    <div class="card"><span class="tag">≈50 %</span><h4>Ideas propias</h4><p>Salen de consumir mucho contenido. Inspírate y mejora la idea, pero no copies.</p></div>
+  </div>
+  <p style="font-size:13px;color:var(--muted)">Los porcentajes son el reparto que dice usar el autor.</p>
+  <h3>Proceso</h3>
+  <ol class="steps">
+    <li><b>Documenta al cliente:</b> su historia, sus datos curiosos y lo que tiene, como coches, ciudad o trayectoria. Es la materia prima de las ideas.</li>
+    <li><b>Revisa lo que ya le funcionó:</b> sus videos con más y con menos visitas.</li>
+    <li><b>Busca referencias</b> con una cuenta dedicada solo a ver Reels. Usa <b>SortFeed</b>, una extensión de Chrome, o el filtro de Reels del móvil para ordenar los videos de una cuenta por vistas.</li>
+    <li><b>Anota cada idea al momento</b> con el enlace de su referencia.</li>
+    <li><b>Describe la idea:</b> escena, acción, formato y diálogo, tal como te la imaginas.</li>
+    <li><b>Pásala por la calculadora</b> (paso 3).</li>
+  </ol>
+  <h3>Plantilla de organización de ideas</h3>
+  <div class="tbl"><table>
+    <tr><th>Campo</th><th>Qué va</th></tr>
+    <tr><td>Número · Actor</td><td>Número del video y quién sale en él.</td></tr>
+    <tr><td>Idea central</td><td>La idea ganadora ya validada.</td></tr>
+    <tr><td>Formato</td><td>Vlog, hablando a cámara, entrevista, selfie, POV, dinámico…</td></tr>
+    <tr><td>Contexto adicional</td><td>Lugar, objetos y lo que haga falta para grabar.</td></tr>
+    <tr><td>Link del guion · Status</td><td>Enlace a la plantilla de guion y estado: redactado, grabado, subido, editado, corregido o publicado.</td></tr>
+  </table></div>
+</section>
+
+<!-- 3 -->
+<section id="calculadora">
+  <h2><span class="n">3</span>Validar con la calculadora de viralidad</h2>
+  <p class="src">Módulos C y G</p>
+  <p>Es una hoja descargable del curso. Respondes sí o no a cada criterio y obtienes una puntuación. Mide solo los elementos que tú controlas.</p>
+  <div class="tbl"><table>
+    <tr><th>Criterio</th><th>Pregunta</th></tr>
+    <tr><td>Filtro 5</td><td>¿Lo entiende un niño de 5 años?</td></tr>
+    <tr><td>Filtro 50</td><td>¿Le interesa al menos a 50 de cada 100 personas al azar?</td></tr>
+    <tr><td>Referencia viral</td><td>¿Hay un video parecido que ya haya sido viral?</td></tr>
+    <tr><td>Mercado viral</td><td>¿Toca salud, sexo, dinero o desarrollo personal?</td></tr>
+    <tr><td>Tendencia</td><td>¿Es un tema de moda en este momento?</td></tr>
+    <tr><td>Controversia</td><td>¿Genera debate o es neutro?</td></tr>
+    <tr><td>Formato</td><td>Cambia la nota. La entrevista suma más porque se usa menos, no porque sea más viral.</td></tr>
+  </table></div>
+  <div class="grid">
+    <div class="card"><h4>Cómo leer la nota</h4><p>Ejemplos del curso: <b>11,5</b> está aprobado. El umbral cambia según la lección: 5, 6 o 7 puntos, sobre un máximo de unos 12. Tómalo como referencia aproximada.</p></div>
+    <div class="card"><h4>Es una guía, no matemáticas</h4><p>Si fallan los dos criterios básicos (5 y 50), la idea no pasa. Una idea al límite puede probarse si tienes buena intuición.</p></div>
+  </div>
+</section>
+
+<!-- 4 -->
+<section id="guion">
+  <h2><span class="n">4</span>Escribir el guion: gancho, historia, moraleja y CTA</h2>
+  <p class="src">Módulos G y B</p>
+  <p><b>Flujo completo:</b> cliente → objetivo → idea ganadora → referencias → plantilla de ideas → plantilla de guion.</p>
+  <div class="timeline">
+    <div><b>1. Gancho</b>Lo más importante. Según el curso, se decide en 0,6 s si alguien se queda.</div>
+    <div><b>2. Historia o contexto</b>Sitúa el tema y mantiene la curiosidad.</div>
+    <div><b>3. Moraleja</b>La enseñanza que te posiciona como experto. Sin ella nadie hace la acción.</div>
+    <div><b>4. CTA</b>Lo que quieres que hagan, después de haber dado valor.</div>
+  </div>
+  <p><b>Duración recomendada:</b> de 50 segundos a 1 minuto. Puede ir de 30 segundos a 1 minuto y medio.</p>
+  <h3>Cómo se llena la plantilla de guion</h3>
+  <ol class="steps">
+    <li>Copia la plantilla y pega la idea ganadora. El gancho puede coincidir con ella.</li>
+    <li>Escribe el objetivo. Si es venta, el guion debe demostrar que sabes del tema.</li>
+    <li>Escribe el gancho y, si hace falta, un <b>regancho</b>: una segunda frase que aumenta la tensión.</li>
+    <li>Redacta la historia y deja huecos para el contenido experto.</li>
+    <li>Escribe la moraleja y el CTA.</li>
+    <li>Completa quién graba, el formato y el lugar.</li>
+    <li>Reúnete con el cliente antes de grabar para que llene los huecos. La IA sirve solo de apoyo, nunca como base del contenido.</li>
+  </ol>
+  <h3>Recursos que aumentan la retención</h3>
+  <div class="grid">
+    <div class="card"><h4>Regancho</h4><p>Una frase justo después del gancho que suma miedo o curiosidad.</p></div>
+    <div class="card"><h4>Regla de 3</h4><p>Anunciar tres puntos. Es tangible, simple y fácil de aplicar.</p></div>
+    <div class="card"><h4>Misterio</h4><p>Retrasar la revelación. En un ejemplo del curso se mantiene hasta cerca del segundo 30.</p></div>
+    <div class="card"><h4>Caso de éxito</h4><p>Un resultado real de un cliente valida la oferta antes del CTA.</p></div>
+  </div>
+  <h3>Tipos de CTA que usa el curso</h3>
+  <div class="tbl"><table>
+    <tr><th>CTA</th><th>Cuándo usarlo</th></tr>
+    <tr><td><b>Comentar una palabra clave</b> (ej. «crédito», «método»)</td><td>Videos de venta. La palabra lleva a un embudo o a un recurso gratis.</td></tr>
+    <tr><td><b>Seguir la cuenta</b></td><td>Etapa de crecimiento. Debe ir con una razón de peso: «si quieres X sin Y, sígueme».</td></tr>
+    <tr><td><b>Escribir por DM o pinchar el enlace</b></td><td>Biografía y videos anclados.</td></tr>
+    <tr><td><b>Sin CTA</b></td><td>Videos de solo viralidad o branding.</td></tr>
+  </table></div>
+  <p style="font-size:13.5px;color:var(--muted)">Módulo B: mientras la cuenta está creciendo, el curso recomienda usar sobre todo el CTA de seguir y pocas palabras clave, y vender por historias.</p>
+</section>
+
+<!-- 5 -->
+<section id="ganchos">
+  <h2><span class="n">5</span>Elegir el gancho: 49 tipos en 7 familias</h2>
+  <p class="src">Módulo E</p>
+  <p>Combina lo que se oye con lo que se ve para dar el máximo estímulo. La gente ya está predispuesta a deslizar, así que dale razones para quedarse. Casi todos los ganchos se adaptan a salud, sexo, dinero o desarrollo personal.</p>
+  <p style="font-size:13px;color:var(--muted)">Las 7 familias son una agrupación de este resumen, no del curso. El curso anuncia 50 ganchos, pero el número 1 no aparece en las lecciones.</p>
+
+  <h3>Curiosidad y confusión</h3>
+  <div class="hooks">
+    <div><b>Hoyo</b>Abre una duda y no la responde.</div>
+    <div><b>Conexiones discordantes</b>Une dos cosas sin relación.</div>
+    <div><b>Pregunta inducida</b>Su respuesta «lógica» resulta falsa.</div>
+    <div><b>Sabías que</b>Un dato curioso.</div>
+    <div><b>Todo el mundo</b>Presión social por no saber algo.</div>
+  </div>
+  <h3>Promesa y simplificación</h3>
+  <div class="hooks">
+    <div><b>Fórmula</b>Un resultado en un tiempo concreto.</div>
+    <div><b>Accionador</b>Una acción simple, un gran beneficio.</div>
+    <div><b>1 minuto</b>Reto de explicarlo en X segundos.</div>
+    <div><b>Objeto mágico</b>Un objeto simple que resuelve un gran problema.</div>
+    <div><b>1 cosa</b>Solo una cosa importa.</div>
+    <div><b>Para X no hagas Y</b>Lo simplifica al máximo.</div>
+    <div><b>Fácil</b>Llama fácil a lo difícil, sin mentir.</div>
+    <div><b>Hack</b>Un tutorial rápido.</div>
+    <div><b>La única / mejor forma</b>Una sola salida.</div>
+    <div><b>Exactamente</b>Concreción total.</div>
+  </div>
+  <h3>Listas y números</h3>
+  <div class="hooks">
+    <div><b>Regla de 3</b>Tres elementos, con el mejor al final.</div>
+    <div><b>Regla de 2</b>Dos razones o noticias.</div>
+    <div><b>Razones</b>La pregunta primero, las razones al final.</div>
+    <div><b>7</b>Usa el número 7.</div>
+    <div><b>21</b>Igual que el 7, con el 21.</div>
+    <div><b>Top</b>Efecto podio.</div>
+  </div>
+  <h3>Emoción negativa, ego y polarización</h3>
+  <div class="hooks">
+    <div><b>Negativo</b>Miedo a perder. Recomendado para empezar una cuenta.</div>
+    <div><b>Reto</b>Entra en el pequeño porcentaje.</div>
+    <div><b>Enemigo común</b>No es tu culpa, es de X.</div>
+    <div><b>Contracorriente</b>Contra la creencia popular.</div>
+    <div><b>Fact</b>Una verdad directa y dura.</div>
+    <div><b>Pregunta incómoda</b>Un tema tabú.</div>
+    <div><b>Negar</b>«No hagas esto…» (efecto del botón rojo).</div>
+    <div><b>Ofensivo</b>Ataca el ego y revela el error al final.</div>
+    <div><b>Es imposible</b>Parte negativa que gira a positiva.</div>
+  </div>
+  <h3>Historia, experiencia y autoridad</h3>
+  <div class="hooks">
+    <div><b>Había una vez</b>Una historia con un beneficio.</div>
+    <div><b>Frase célebre</b>Familiaridad y reflexión.</div>
+    <div><b>Resultados</b>Tu resultado como validación.</div>
+    <div><b>Entrevista</b>Si te preguntan, se asume que sabes.</div>
+    <div><b>Conviérteme</b>De algo común a algo soñado.</div>
+    <div><b>Después de</b>La experiencia de quien ya lo probó.</div>
+    <div><b>El otro día</b>Una situación cercana.</div>
+    <div><b>Desde que</b>Una historia a partir de un cambio.</div>
+  </div>
+  <h3>Hipótesis, condición y elección</h3>
+  <div class="hooks">
+    <div><b>Si tú</b>Una condición que identifica a quien mira.</div>
+    <div><b>Situación</b>Hipótesis resuelta por un experto.</div>
+    <div><b>Si mañana me despertara</b>Qué haría el experto.</div>
+    <div><b>Qué prefieres</b>Una elección que polariza.</div>
+    <div><b>Si solo</b>Reto condicionante en boca de un experto.</div>
+  </div>
+  <h3>Visuales y de estímulo</h3>
+  <div class="hooks">
+    <div><b>Sorpresa</b>Una acción inesperada al inicio.</div>
+    <div><b>Señalar</b>Señalar un objeto: estímulo visual y auditivo.</div>
+    <div><b>Sexual</b>Que suene sexual sin serlo.</div>
+    <div><b>Reacción</b>Reaccionar a un video viral del nicho.</div>
+    <div><b>Visual</b>Un elemento o movimiento que impacta.</div>
+    <div><b>Culo</b>Alguien atractivo al inicio.</div>
+  </div>
+  <p style="font-size:13.5px;color:var(--muted)"><b>Advertencias del curso:</b> los ganchos «Situación» y «Si solo» solo funcionan si los usa un experto con resultados. El gancho «Fácil» no debe usarse para mentir. Los 15 primeros son los más validados.</p>
+</section>
+
+<!-- 6 -->
+<section id="formatos">
+  <h2><span class="n">6</span>Escoger el formato</h2>
+  <p class="src">Módulo H, lecciones 02 a 11</p>
+  <div class="tbl"><table>
+    <tr><th>Formato</th><th>Para qué sirve</th><th>Claves de grabación</th></tr>
+    <tr><td><b>Hablando a cámara</b></td><td>Conectar y generar confianza, explicar.</td><td>Trípode, vertical, 1x o 2x, unos 50 s y espacio arriba para textos.</td></tr>
+    <tr><td><b>Dinámico</b></td><td>Romper el patrón y simplificar temas complejos.</td><td>Cada frase en un sitio o formato distinto. Planifícalo en el guion y no cambies por cambiar.</td></tr>
+    <tr><td><b>Entrevista</b></td><td>Autoridad sin parecer venta y mayor alcance.</td><td>Empieza con la pregunta. Micrófono de mano, 0.5, buena luz, varias personas y entrevistador de lado.</td></tr>
+    <tr><td><b>Mirando a la nada</b></td><td>Pasar de vendedor a referente (efecto mosca en la pared).</td><td>Como a cámara, pero mirando a un lado. Ideal para rankings y respuestas.</td></tr>
+    <tr><td><b>Pantalla dividida</b></td><td>Mostrar lo que dices mientras lo dices.</td><td>Deja hueco para dividir sin cortar la cara. Sirve para comparar, mostrar la pantalla o reaccionar.</td></tr>
+    <tr><td><b>Pantalla verde</b></td><td>Poner un fondo con imágenes o noticias.</td><td>En estudio con buena luz, o en selfie quitando el fondo con CapCut.</td></tr>
+    <tr><td><b>Vlog</b></td><td>Demostrar que lo que dices es verdad.</td><td>Abre con un resultado o una pregunta, no con un saludo. Movimiento y luz cuidada.</td></tr>
+    <tr><td><b>Prima pregunta</b> (podcast)</td><td>Autoridad para atraer audiencia nueva.</td><td>Dos cámaras laterales y luz a 45°. Pregunta como gancho, respuesta segura y cierre con acción.</td></tr>
+    <tr><td><b>POV</b></td><td>Que quien mira se proyecte, sin sensación de publicidad.</td><td>Móvil pegado al torso «en bloque», dos pasos atrás y empieza a hablar al dar el primer paso.</td></tr>
+    <tr><td><b>Selfie</b></td><td>Cercanía y mensaje directo, testimonios.</td><td>Brazo recto y móvil de frente, no desde abajo. Deja espacio arriba.</td></tr>
+  </table></div>
+</section>
+
+<!-- 7 -->
+<section id="grabar">
+  <h2><span class="n">7</span>Preparar y grabar</h2>
+  <p class="src">Módulos H (lección 01) y F</p>
+  <h3>Checklist antes de grabar</h3>
+  <ol class="steps">
+    <li>Imagina el video terminado: qué hay en escena y qué objetos se ven, como tarjetas, comida o un coche.</li>
+    <li>Anota todo en el contexto adicional de la plantilla.</li>
+    <li>Avisa al cliente con días de anticipación. Si no lo consigue, llévalo tú.</li>
+    <li>Confirma el lugar, el vestuario, la luz y el micrófono adecuado.</li>
+  </ol>
+  <p class="key">Según el curso, la mayoría de las grabaciones fallan por falta de preparación, no por la idea.</p>
+  <h3>Stocks y B-roll (tomas de apoyo)</h3>
+  <div class="grid">
+    <div class="card"><h4>Luz</h4><p>Graba en sombra: se ve más cinematográfico. Prioriza que la persona se vea bien, aunque el fondo se queme.</p></div>
+    <div class="card"><h4>Cámara</h4><p>Lente amplio para mostrar el lugar, en trípode, entre el pecho y los ojos. Desde abajo da autoridad; desde arriba la quita.</p></div>
+    <div class="card"><h4>Móvil</h4><p>Limpia el lente. Graba en 4K a 60 fps, en 1x y nunca en 0.5. Usa la cuadrícula de tercios y deja aire arriba y abajo.</p></div>
+    <div class="card"><h4>Movimiento</h4><p>Siempre debe moverse la cámara o la persona. Dirige al sujeto y pídele que use las manos.</p></div>
+    <div class="card"><h4>Variedad</h4><p>Caminando, de lado, sentado, de pie, objetos sin persona y fotos. Horizontal para YouTube y vertical para Reels.</p></div>
+    <div class="card"><h4>Balance de blancos</h4><p>Ajústalo cada vez que cambies de lugar para que la imagen no salga amarilla.</p></div>
+  </div>
+  <p style="font-size:13.5px;color:var(--muted)">Módulo B: el curso propone grabar por lotes, unos 40 videos en un día, lo que da para un mes y medio.</p>
+</section>
+
+<!-- 8 -->
+<section id="edicion">
+  <h2><span class="n">8</span>Editar</h2>
+  <p class="src">Módulo H, lecciones 12 a 16</p>
+  <p class="key">Lo simple gana: cuanto más fácil de entender es el mensaje, más se queda la persona.</p>
+  <h3>Los 7 principios</h3>
+  <div class="grid">
+    <div class="card"><span class="tag">1</span><h4>Quitar fricción</h4><p>Cortes precisos: todo lo que no aporta es relleno.</p></div>
+    <div class="card"><span class="tag">2</span><h4>Ritmo</h4><p>Cada video tiene el suyo. Buen ritmo no siempre es el más rápido: los silencios intencionales también cuentan.</p></div>
+    <div class="card"><span class="tag">3</span><h4>Subtítulos</h4><p>Obligatorios: según el curso, el 70 % ve los videos sin audio. Una o dos fuentes como máximo.</p></div>
+    <div class="card"><span class="tag">4</span><h4>Señalización</h4><p>Iconos, números y símbolos de lo que se dice, sobre todo en el gancho.</p></div>
+    <div class="card"><span class="tag">5</span><h4>Interrupciones de patrón</h4><p>Cada 5 a 15 s, cambia el plano, la música o mete un efecto.</p></div>
+    <div class="card"><span class="tag">6</span><h4>Audio</h4><p>Primero la voz limpia, luego la música y al final los efectos. Pesa tanto como la imagen o más.</p></div>
+    <div class="card"><span class="tag">7</span><h4>Carga cognitiva</h4><p>Que ver el video cueste el menor esfuerzo posible. Los seis principios anteriores sirven para eso.</p></div>
+    <div class="card"><span class="tag">+</span><h4>Mostrar &gt; decir</h4><p>Pruebas reales, capturas y clips. Mantén el texto donde ya está la mirada y usa zooms siempre acercando.</p></div>
+  </div>
+  <h3>En la práctica</h3>
+  <div class="tbl"><table>
+    <tr><th>Etapa</th><th>Qué hacer</th></tr>
+    <tr><td><b>Limpieza</b></td><td>Sincroniza las cámaras por forma de onda. Corta silencios, errores y repeticiones, deja las últimas tomas y revisa todo.</td></tr>
+    <tr><td><b>Ritmo</b></td><td>Entiende la idea antes de cortar. Cada cambio de cámara tiene una intención y también sirve para esconder cortes. Usa el audio más nítido.</td></tr>
+    <tr><td><b>Subtítulos</b></td><td>Generados automáticamente y corregidos a mano. Sin comas ni puntos, una frase por subtítulo, 2 o 3 palabras por línea en vertical y una fuente distinta por personaje.</td></tr>
+    <tr><td><b>Zona segura</b></td><td>Pon una plantilla de zona segura encima para ubicar la cara, el texto y los iconos.</td></tr>
+    <tr><td><b>Recursos</b></td><td>Epidemic Sound para música y YouTube como opción gratuita. Para el ruido y el eco, una herramienta que no se nombra en el audio.</td></tr>
+  </table></div>
+  <h3>Flujo con editores</h3>
+  <p>Usa una plantilla con nombre, referencia, editor, material en bruto, guion y fecha límite, con estos estados: <b>listo para editar → editando → listo para revisar → correcciones → aprobado</b>. Pon la fecha límite un día antes de publicar. Edita siempre desde el archivo en bruto y guarda el proyecto al menos 14 días.</p>
+</section>
+
+<!-- 9 -->
+<section id="publicar">
+  <h2><span class="n">9</span>Publicar, medir y repetir</h2>
+  <p class="src">Módulos B, C y D</p>
+  <div class="grid">
+    <div class="card"><h4>Frecuencia</h4><p>Lo que más importa es la constancia: no faltes a ninguna publicación prometida. En crecimiento, un reel al día si puedes sostenerlo. En venta, cuatro por semana y nunca menos de tres. Historias todos los días.</p></div>
+    <div class="card"><h4>Horario</h4><p>No existe una hora mágica. Publica entre las 12:00 y las 19:00, un poco antes del pico de actividad de tu audiencia.</p></div>
+    <div class="card"><h4>Plataformas</h4><p>No publiques en Facebook desde Instagram. Sube el contenido a mano en cada aplicación: Facebook, TikTok y Shorts.</p></div>
+    <div class="card"><h4>Repite lo que funciona</h4><p>Si un video se hace viral, repítelo con cambios o en otro formato hasta que deje de funcionar. Lo que no funcionó no se repite.</p></div>
+  </div>
+  <h3>Trial Reels: más visitas del mismo video</h3>
+  <p>Solo los ven personas que no te siguen. Según el curso, Instagram revisa si un video está repetido únicamente cuando se publica como prueba, así que cada versión debe llevar algún cambio.</p>
+  <div class="tbl"><table>
+    <tr><th>Situación</th><th>Qué hacer</th></tr>
+    <tr><td>Todo video nuevo</td><td>Publícalo en el feed y una copia en Trials.</td></tr>
+    <tr><td>Video con ×3 la media de tus últimos 20</td><td>Haz 3 versiones nuevas: espejo y velocidad un 2–4 % más rápida, colores invertidos o un texto fijo arriba.</td></tr>
+    <tr><td>Video con ×10 la media</td><td>Hasta 12 versiones, combinando las variables y en días distintos.</td></tr>
+    <tr><td>Estrategia 5x</td><td>Para los ganadores en vistas, o con ×5 a ×9 en comentarios: 5 versiones el mismo día, una cada 1 o 2 horas. Cambia la música, el encuadre, el texto o el espejo.</td></tr>
+  </table></div>
+  <p style="font-size:13.5px;color:var(--muted)">Empieza con un Trial al día y no cambies tu programación principal. Si después de 10 a 15 días no funciona, déjalo: Instagram puede haber cerrado la opción.</p>
+</section>
+
+<footer>Fuente: transcripción automática de las lecciones de la carpeta «2. Viralidad» del curso viralidad.com. Para ver una plantilla o un ejemplo en pantalla, abre el video del módulo indicado.</footer>
+</div>
+</body>
+</html>
