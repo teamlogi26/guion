@@ -424,3 +424,12 @@ body.imprimiendo .sh-foot { margin-top: 10px; padding-top: 8px; }
   .pieza { grid-template-columns: 1fr; }
   .gc-sel, .pk-form { grid-template-columns: 1fr; }
 }
+
+/* ===== Usuario y votos por persona ===== */
+.voto-row.yo { background: rgba(255,201,74,.07); border-radius: 8px; padding-left: 6px; padding-right: 4px; }
+.voto-row.yo small { color: #ffc94a; }
+.voto-row.bloq { opacity: .55; }
+.voto-row.bloq .estrellas button { cursor: not-allowed; }
+.chip.votaste { background: rgba(255,201,74,.16); color: #ffd877; border-color: transparent; font-weight: 600; }
+.idea.votada, .pieza.votada { border-left: 4px solid #ffc94a; }
+#userForm { display: grid; gap: 14px; }

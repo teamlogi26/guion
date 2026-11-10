@@ -96,11 +96,13 @@ function banco() {
 }
 function tarjeta(p) {
   const vs = P.votos.filter(v => v.pieza_id === p.id), pr = prom(vs), n = nota(p);
-  return h("article", { class: "pieza " + p.clase, tabindex: 0, onclick: () => abrirPieza(p), onkeydown: e => { if (e.key === "Enter") abrirPieza(p); } },
+  const yo = L.state.usuario, mio = yo && vs.find(v => v.votante_id === yo.id);
+  return h("article", { class: "pieza " + p.clase + (mio ? " votada" : ""), tabindex: 0, onclick: () => abrirPieza(p), onkeydown: e => { if (e.key === "Enter") abrirPieza(p); } },
     h("span", { class: "pz-clase" }, p.clase === "gancho" ? "GANCHO" : "CTA"),
     h("div", {},
       h("p", { class: "pz-texto" }, `“${p.texto}”`),
       h("div", { class: "chips" },
+        mio && h("span", { class: "chip votaste" }, `✓ Votaste ★${mio.puntaje}`),
         p.tipo_nombre && h("span", { class: "chip" }, `${p.tipo_nombre} · ${p.tipo_familia}`),
         p.clase === "cta" && p.objetivo && h("span", { class: "chip" }, p.objetivo),
         p.palabra && h("span", { class: "chip nivel" }, "Palabra: " + p.palabra),
@@ -175,6 +177,7 @@ function abrirPieza(p, opciones = {}) {
   $("#pzBorrar").hidden = nueva;
   pintarForm();
   dlg.showModal();
+  L.arriba(dlg);
 }
 
 function pintarForm() {
@@ -229,12 +232,25 @@ function pintarCheck() {
   $("#pzNota").textContent = `${n.si} de ${n.total}`;
 }
 
+// El voto se guarda al instante (sin botón Guardar) cuando el gancho o CTA ya existe
+async function guardarVotoP(piezaId, votanteId, valor) {
+  const r = valor
+    ? await sb.from("voto_pieza").upsert({ pieza_id: piezaId, votante_id: votanteId, puntaje: valor })
+    : await sb.from("voto_pieza").delete().eq("pieza_id", piezaId).eq("votante_id", votanteId);
+  if (r.error) return fallo(r.error, "guardar el voto");
+  P.votos = P.votos.filter(v => !(v.pieza_id === piezaId && v.votante_id === votanteId));
+  if (valor) P.votos.push({ pieza_id: piezaId, votante_id: votanteId, puntaje: valor });
+  toast(valor ? "Voto guardado" : "Voto quitado");
+  if (!$("#view-ganchos").hidden) pintar();
+}
+
 function pintarVotosP() {
   const d = P.borrador;
-  $("#pzVotos").replaceChildren(...L.state.votantes.filter(v => v.activo).map(vt => h("div", { class: "voto-row" },
-    h("span", {}, vt.nombre),
-    h("div", { class: "estrellas" }, [1, 2, 3, 4, 5].map(n => h("button", { type: "button", class: d.votos[vt.id] >= n ? "on" : "", "aria-label": `${vt.nombre}: ${n}`,
-      onclick: () => { d.votos[vt.id] = d.votos[vt.id] === n ? null : n; pintarVotosP(); } }, "★"))))));
+  $("#pzVotos").replaceChildren(...L.state.votantes.filter(v => v.activo).map(vt => L.filaVoto(vt, d.votos[vt.id], valor => {
+    d.votos[vt.id] = valor;
+    pintarVotosP();
+    if (P.editando) guardarVotoP(P.editando.id, vt.id, valor);
+  })));
   const vals = Object.values(d.votos).filter(Boolean);
   $("#pzProm").textContent = vals.length ? `Promedio ★ ${fmt(vals.reduce((a, b) => a + b, 0) / vals.length)} · ${vals.length} voto${vals.length === 1 ? "" : "s"}` : "Sin votos";
 }

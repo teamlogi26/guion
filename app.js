@@ -66,6 +66,7 @@ function getUmbral() {
 function mostrarAuth(modo, mensaje, ok) {
   $("#app").hidden = true;
   $("#auth").hidden = false;
+  $("#userForm").hidden = true;
   $("#loginForm").hidden = modo !== "login";
   $("#resetForm").hidden = modo !== "reset";
   $("#newPassForm").hidden = modo !== "nueva";
@@ -128,13 +129,66 @@ if (!window.REQUIERE_LOGIN) {
 let dentro = false;
 async function entrar(session) {
   $("#userEmail").textContent = session ? session.user.email : "";
+  if (!dentro) {
+    dentro = true;
+    await cargarTodo();
+    if (!window.REQUIERE_LOGIN && !usuarioGuardado()) return elegirUsuario();
+    abrirApp();
+  } else abrirApp();
+}
+function abrirApp() {
   $("#auth").hidden = true;
   $("#app").hidden = false;
-  if (dentro) return;
-  dentro = true;
-  await cargarTodo();
+  if (!window.REQUIERE_LOGIN) {
+    $("#userEmail").textContent = "👤 " + (state.usuario?.nombre || "");
+    $("#cambiarUsuario").hidden = false;
+  }
   const h0 = location.hash.slice(1);
   irA(TONOS[h0] ? h0 : "ideas");
+}
+
+// ---------- usuario (sin contraseña): quién vota ----------
+const ADMIN_VOTOS = "Juan Vargas"; // puede votar en la casilla de cualquiera
+function usuarioGuardado() {
+  let id = null;
+  try { id = Number(localStorage.getItem("usuario")); } catch {}
+  state.usuario = state.votantes.find(v => v.id === id && v.activo) || null;
+  return state.usuario;
+}
+function elegirUsuario() {
+  $("#app").hidden = true;
+  $("#auth").hidden = false;
+  ["#loginForm", "#resetForm", "#newPassForm", "#authMsg"].forEach(s => $(s).hidden = true);
+  $("#userForm").hidden = false;
+  $("#authTitle").textContent = "Entrar";
+  $("#authSub").textContent = "Elige tu nombre para votar con tu usuario.";
+  const sel = $("#userSelect");
+  sel.replaceChildren(h("option", { value: "" }, "Selecciona…"),
+    ...state.votantes.filter(v => v.activo).map(v => h("option", { value: v.id }, v.nombre)));
+  sel.value = state.usuario ? String(state.usuario.id) : "";
+}
+$("#userForm").onsubmit = e => {
+  e.preventDefault();
+  const id = Number($("#userSelect").value);
+  state.usuario = state.votantes.find(v => v.id === id) || null;
+  if (!state.usuario) return;
+  try { localStorage.setItem("usuario", String(id)); } catch {}
+  abrirApp();
+  pintarIdeas();
+  window.__logi.vistas.ganchos && !$("#view-ganchos").hidden && window.__logi.vistas.ganchos();
+};
+$("#cambiarUsuario").onclick = () => elegirUsuario();
+const esAdminVotos = () => state.usuario?.nombre === ADMIN_VOTOS;
+const puedeVotar = votanteId => window.REQUIERE_LOGIN || esAdminVotos() || state.usuario?.id === votanteId;
+
+// Fila de estrellas de un votante. onPick(valor|null) se llama al hacer clic, si tiene permiso.
+function filaVoto(vt, valor, onPick) {
+  const puede = puedeVotar(vt.id), yo = state.usuario?.id === vt.id;
+  return h("div", { class: "voto-row" + (puede ? "" : " bloq") + (yo ? " yo" : ""), title: puede ? "" : "Solo " + vt.nombre + " puede votar aquí" },
+    h("span", {}, vt.nombre, yo ? h("small", {}, " (tú)") : null),
+    h("div", { class: "estrellas" }, [1, 2, 3, 4, 5].map(n => h("button", {
+      type: "button", class: valor >= n ? "on" : "", disabled: !puede, "aria-label": `${vt.nombre}: ${n}`,
+      onclick: () => onPick(valor === n ? null : n) }, "★"))));
 }
 
 // ---------- datos ----------
@@ -189,6 +243,9 @@ function llenarSelects() {
   est.replaceChildren(h("option", { value: "" }, "Todos"), ...Object.entries(ESTADOS).map(([k, v]) => h("option", { value: k }, v)));
   est.value = actual;
   $$("select[data-cat]").forEach(s => llenarSelect(s, valores(s.dataset.cat), "—"));
+  // En la calculadora, cada formato muestra lo que suma
+  const fs = $("#ideaForm select[name=formato]");
+  [...fs.options].forEach(o => { if (o.value) o.textContent = `${o.value} (+${fmt(peso("formato:" + o.value))})`; });
 }
 
 // ---------- navegación ----------
@@ -267,12 +324,14 @@ $("#fUmbral").value = getUmbral();
 function tarjetaIdea(i, umbral, max) {
   const p = Number(i.puntaje_total), v = votosDe(i.id), prom = promedio(v);
   const alto = i.calificada && p >= umbral && i.estado !== "descartada";
-  return h("article", { class: "idea" + (alto ? " top" : "") + (i.estado === "descartada" ? " descartada" : ""), tabindex: 0,
+  const mio = state.usuario && v.find(x => x.votante_id === state.usuario.id);
+  return h("article", { class: "idea" + (alto ? " top" : "") + (mio ? " votada" : "") + (i.estado === "descartada" ? " descartada" : ""), tabindex: 0,
     onclick: () => abrirIdea(i), onkeydown: e => { if (e.key === "Enter") abrirIdea(i); } },
     h("div", { class: "n" }, i.numero ?? "–"),
     h("div", {},
       h("h3", {}, i.titulo),
       h("div", { class: "chips" },
+        mio && h("span", { class: "chip votaste" }, `✓ Votaste ★${mio.puntaje}`),
         i.pilar && h("span", { class: "chip " + pilarClass(i.pilar) }, i.pilar),
         i.tematica && h("span", { class: "chip" }, i.tematica),
         i.herramienta && h("span", { class: "chip" }, "🔧 " + i.herramienta),
@@ -369,6 +428,9 @@ function pintarCalc() {
   }));
   d.formato = form.formato.value || null;
   d.pilar = form.pilar.value || null;
+  const vals = state.pesos.filter(p => p.clave.startsWith("formato:")).sort((a, b) => b.peso - a.peso)
+    .map(p => `${p.clave.slice(8)} +${fmt(p.peso)}`);
+  $("#formatoValor").textContent = (d.formato ? `Este formato suma +${fmt(peso("formato:" + d.formato))}. ` : "") + "Valor por formato: " + vals.join(" · ");
   const t = puntaje(d), max = puntajeMax();
   $("#calcTotal").textContent = fmt(t);
   $("#calcMax").textContent = "de " + fmt(max);
@@ -390,11 +452,11 @@ function pintarNivel() {
 function pintarVotos() {
   const d = state.borrador;
   const activos = state.votantes.filter(v => v.activo);
-  $("#votos").replaceChildren(...activos.map(vt => h("div", { class: "voto-row" },
-    h("span", {}, vt.nombre),
-    h("div", { class: "estrellas" }, [1, 2, 3, 4, 5].map(n => h("button", {
-      type: "button", class: (d.votos[vt.id] >= n ? "on" : ""), "aria-label": `${vt.nombre}: ${n}`,
-      onclick: () => { d.votos[vt.id] = d.votos[vt.id] === n ? null : n; pintarVotos(); } }, "★"))))));
+  $("#votos").replaceChildren(...activos.map(vt => filaVoto(vt, d.votos[vt.id], valor => {
+    d.votos[vt.id] = valor;
+    pintarVotos();
+    if (state.editando) guardarVoto(state.editando.id, vt.id, valor);
+  })));
   const vals = Object.values(d.votos).filter(Boolean);
   $("#votoProm").textContent = vals.length ? `Promedio ★ ${fmt(vals.reduce((a, b) => a + b, 0) / vals.length)} · ${vals.length} voto${vals.length === 1 ? "" : "s"}` : "Sin votos";
 }
@@ -442,7 +504,10 @@ function abrirIdea(idea) {
   pintarVotos();
   pintarParecidas();
   dlg.showModal();
+  arriba(dlg);
 }
+// Al abrir otra tarjeta, el detalle empieza desde arriba
+function arriba(d) { [d, ...d.querySelectorAll("*")].forEach(e => { if (e.scrollTop) e.scrollTop = 0; }); }
 $("#btnNew").onclick = () => abrirIdea(null);
 
 async function asegurarLote(valor) {
@@ -465,6 +530,18 @@ function datosForm() {
     nivel_conciencia: d.nivel_conciencia ?? null,
     ...Object.fromEntries(CRITERIOS.map(c => [c, !!d[c]]))
   };
+}
+
+// El voto se guarda al instante (sin botón Guardar) cuando la idea ya existe
+async function guardarVoto(ideaId, votanteId, valor) {
+  const r = valor
+    ? await sb.from("voto").upsert({ idea_id: ideaId, votante_id: votanteId, puntaje: valor })
+    : await sb.from("voto").delete().eq("idea_id", ideaId).eq("votante_id", votanteId);
+  if (r.error) return fallo(r.error, "guardar el voto");
+  state.votos = state.votos.filter(v => !(v.idea_id === ideaId && v.votante_id === votanteId));
+  if (valor) state.votos.push({ idea_id: ideaId, votante_id: votanteId, puntaje: valor });
+  toast(valor ? "Voto guardado" : "Voto quitado");
+  pintarIdeas();
 }
 
 async function guardarVotos(ideaId) {
@@ -557,7 +634,10 @@ $("#fileExcel").onchange = async e => {
   const cab = filas[hi].map(c => String(c).trim());
   const col = {};
   for (const [k, re] of Object.entries(ALIAS)) { const j = cab.findIndex(c => re.test(c)); if (j >= 0) col[k] = j; }
-  const votCols = state.votantes.map(v => [v, cab.findIndex(c => c.toLowerCase() === v.nombre.toLowerCase())]).filter(([, j]) => j >= 0);
+  // Nombres anteriores de las columnas de votos (plantillas viejas)
+  const ANTES = { "juan vargas": ["juan"], "willington": ["wilinton", "wilington"], "juan grillo": ["juan g"], "thiago": ["santi"] };
+  const esDe = (c, v) => { const n = v.nombre.toLowerCase(), x = c.toLowerCase(); return x === n || (ANTES[n] || []).includes(x); };
+  const votCols = state.votantes.map(v => [v, cab.findIndex(c => esDe(c, v))]).filter(([, j]) => j >= 0);
   const ignorados = cab.filter((c, j) => c && !Object.values(col).includes(j) && !votCols.some(([, k]) => k === j) && !/puntuaci|promedio|top|^#$|fecha|estado|origen/i.test(c));
 
   importacion = filas.slice(hi + 1).map(r => {
@@ -711,6 +791,6 @@ $("#savePesos").onclick = async () => {
 })();
 
 // Para pruebas desde la consola del navegador
-window.__logi = { state, pintarIdeas, abrirIdea, pintarAjustes, llenarSelects, entrar,
+window.__logi = { state, pintarIdeas, abrirIdea, pintarAjustes, llenarSelects, entrar, filaVoto, arriba,
   sb, h, $, $$, toast, fallo, valores, irA, vistas };
 })();
