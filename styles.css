@@ -433,3 +433,8 @@ body.imprimiendo .sh-foot { margin-top: 10px; padding-top: 8px; }
 .chip.votaste { background: rgba(255,201,74,.16); color: #ffd877; border-color: transparent; font-weight: 600; }
 .idea.votada, .pieza.votada { border-left: 4px solid #ffc94a; }
 #userForm { display: grid; gap: 14px; }
+
+/* ===== Barra superior a todo el ancho de la pantalla ===== */
+.strip { max-width: none; padding: 0; }
+nav.tabs { padding-left: 24px; padding-right: 24px; }
+.bar { border-radius: 0; padding: 10px 24px; }
