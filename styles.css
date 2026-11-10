@@ -438,3 +438,15 @@ body.imprimiendo .sh-foot { margin-top: 10px; padding-top: 8px; }
 .strip { max-width: none; padding: 0; }
 nav.tabs { padding-left: 24px; padding-right: 24px; }
 .bar { border-radius: 0; padding: 10px 24px; }
+
+/* ===== Banco de sketches ===== */
+#dlgBanco { max-width: min(1000px, calc(100vw - 24px)); }
+.banco { padding: 20px; max-height: calc(100vh - 40px); overflow: auto; }
+.banco input[type=search] { width: 100%; margin: 8px 0 14px; }
+.banco-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+.banco-item { display: grid; gap: 4px; text-align: left; padding: 8px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid var(--line); color: var(--ink); cursor: pointer; font: inherit; }
+.banco-item:hover { border-color: var(--naranja); background: rgba(242,106,46,.08); }
+.banco-item img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 8px; background: #fff; }
+.banco-item small { color: var(--muted); font-size: 11px; }
+.banco-item span { font-size: 12px; line-height: 1.3; }
+.sk-btns { display: flex; flex-wrap: wrap; gap: 6px; }

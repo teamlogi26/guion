@@ -163,6 +163,45 @@ function actualizarConteo() {
   el.className = "conteo" + (s > max ? " warn" : "");
 }
 
+// ---------- sketches: prompt para generar y banco para reutilizar ----------
+const ESTILO_SKETCH = "Boceto de storyboard a lápiz: grafito en blanco y negro sobre papel blanco, trazo limpio con sombreado suave, " +
+  "formato horizontal 3:2, sin colores. El presentador es el hombre de la foto adjunta (usa su cara como referencia), " +
+  "en una oficina, camiseta oscura. Si hay texto, que sea corto y en español. Escena: ";
+function copiarPrompt(e) {
+  const pant = (e.texto_pantalla || "").replace(/^\d+:\d\d\s*/gm, "").trim();
+  const t = ESTILO_SKETCH + (e.sketch_prompt || e.dialogo || "") + (e.plano ? ` Plano: ${e.plano}.` : "") + (pant ? ` Texto visible: «${pant}».` : "");
+  navigator.clipboard.writeText(t).then(() => toast("Prompt copiado. Pégalo en ChatGPT o Gemini con una foto de Wilber."), () => prompt("Copia el prompt:", t));
+}
+
+let dlgBanco;
+async function abrirBanco(alElegir) {
+  const { data, error } = await sb.from("bloque").select("sketch_url, dialogo, plano, tipo, guion_id, orden").not("sketch_url", "is", null);
+  if (error) return fallo(error, "cargar el banco de sketches");
+  const vistos = new Map();
+  for (const b of data) if (!vistos.has(b.sketch_url)) vistos.set(b.sketch_url, b);
+  const items = [...vistos.values()].map(b => {
+    const g = G.lista.find(x => x.id === b.guion_id);
+    return { ...b, guion: g ? `Guion ${g.numero}` : "", generado: !/\/simples\//.test(b.sketch_url) };
+  }).sort((a, b) => (b.generado - a.generado) || ((G.lista.find(x => x.id === a.guion_id)?.numero ?? 0) - (G.lista.find(x => x.id === b.guion_id)?.numero ?? 0)) || a.orden - b.orden);
+  if (!dlgBanco) { dlgBanco = h("dialog", { id: "dlgBanco" }); document.body.append(dlgBanco); }
+  const grid = h("div", { class: "banco-grid" });
+  const pintar = q => {
+    const t = (q || "").toLowerCase();
+    grid.replaceChildren(...items.filter(b => !t || `${b.dialogo} ${b.plano} ${b.guion} ${b.tipo}`.toLowerCase().includes(t)).map(b =>
+      h("button", { type: "button", class: "banco-item", title: b.dialogo || "", onclick: () => { dlgBanco.close(); alElegir(b.sketch_url); } },
+        h("img", { src: b.sketch_url, alt: "", loading: "lazy" }),
+        h("small", {}, `${b.guion} · esc. ${b.orden} · ${b.generado ? "imagen" : "simple"}`),
+        h("span", {}, (b.dialogo || "").slice(0, 70)))));
+  };
+  dlgBanco.replaceChildren(h("div", { class: "cloud banco" },
+    h("div", { class: "dlg-head" }, h("h2", {}, "Banco de sketches"), h("button", { class: "x", type: "button", "aria-label": "Cerrar", onclick: () => dlgBanco.close() }, "×")),
+    h("p", { class: "hint" }, `${items.length} sketches usados en los guiones. Busca por lo que dice la escena, el plano o el guion, y haz clic para usarlo.`),
+    h("input", { type: "search", placeholder: "Buscar: pizza, mapa, celular, Guion 7…", oninput: ev => pintar(ev.target.value) }),
+    grid));
+  pintar("");
+  dlgBanco.showModal();
+}
+
 function pintarEscenas() {
   const cont = $("#edEscenas");
   cont.replaceChildren(...G.escenas.map((e, i) => {
@@ -203,7 +242,14 @@ function pintarEscenas() {
         h("button", { type: "button", class: "btn small bad", title: "Quitar escena", onclick: () => { if (confirm("¿Quitar esta escena?")) { G.escenas.splice(i, 1); pintarEscenas(); } } }, "×")),
       h("div", { class: "esc-grid" },
         h("div", { class: "sk" }, img,
-          h("div", { class: "sk-btns" }, h("button", { type: "button", class: "btn small", onclick: () => file.click() }, "Subir imagen"), file),
+          h("div", { class: "sk-btns" },
+            h("button", { type: "button", class: "btn small", onclick: () => file.click() }, "Subir imagen"), file,
+            h("button", { type: "button", class: "btn small", onclick: () => abrirBanco(url => {
+              e.sketch_url = url; urlIn.value = url;
+              img.replaceChildren(h("img", { src: url, alt: "" }));
+              toast("Sketch elegido. Recuerda guardar.");
+            }) }, "Del banco"),
+            h("button", { type: "button", class: "btn small", title: "Copia el prompt con el estilo lápiz para ChatGPT o Gemini", onclick: () => copiarPrompt(e) }, "Copiar prompt")),
           urlIn,
           h("details", {}, h("summary", {}, "Prompt del sketch"), ta("sketch_prompt", 3, "Descripción usada para generar la imagen"))),
         h("div", { class: "esc-fields" },
