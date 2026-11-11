@@ -331,19 +331,30 @@ $("#sbTodos").onclick = async () => {
   window.print();
   pintarStoryboard([G.sbGuion]);
 };
-// Al imprimir: modo compacto y, si una hoja no cabe en un A4, se reduce para que quede en una sola página
-const ALTO_A4 = 1020;   // px útiles de un A4 con márgenes de 8 mm (con un poco de holgura)
+// Al imprimir: modo compacto y cada guion en una sola hoja.
+// Si no cabe, se reduce con zoom, pero antes se ensancha para que siga ocupando todo el ancho de la hoja.
+const ANCHO_HOJA = 733;  // px útiles de ancho (A4 con márgenes de 8 mm)
+const ALTO_HOJA = 985;   // px útiles de alto, con holgura para que también quepa en tamaño Carta
+function ajustarHoja(s) {
+  s.style.zoom = "";
+  let z = 1;
+  for (let i = 0; i < 8; i++) {
+    s.style.width = (ANCHO_HOJA / z) + "px";
+    const nz = Math.min(1, ALTO_HOJA / s.offsetHeight);
+    if (Math.abs(nz - z) < 0.003) break;
+    z = (z + nz) / 2;
+  }
+  // Con el ancho ya fijo, el zoom final garantiza que el alto quepa
+  z = Math.min(z, ALTO_HOJA / s.offsetHeight, 1);
+  s.style.zoom = z < 1 ? (z * 0.99).toFixed(3) : "";
+}
 addEventListener("beforeprint", () => {
   document.body.classList.add("imprimiendo");
-  $$(".sheet").forEach(s => {
-    s.style.zoom = "";
-    const alto = s.getBoundingClientRect().height;
-    if (alto > ALTO_A4) s.style.zoom = (ALTO_A4 / alto).toFixed(3);
-  });
+  $$(".sheet").forEach(ajustarHoja);
 });
 addEventListener("afterprint", () => {
   document.body.classList.remove("imprimiendo");
-  $$(".sheet").forEach(s => { s.style.zoom = ""; });
+  $$(".sheet").forEach(s => { s.style.zoom = ""; s.style.width = ""; });
 });
 $("#sbEditar").onclick = () => abrirEditor(G.sbGuion);
 

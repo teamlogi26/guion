@@ -293,36 +293,57 @@ dialog .cloud { padding: 26px clamp(16px, 3vw, 30px); max-height: calc(100vh - 2
 .sh-foot .dt { background: #eceef0; border-radius: 10px; padding: 10px 18px; text-align: center; font: 700 14px/1.3 var(--font-display); }
 .sh-foot .dt b { display: block; font-size: 20px; }
 
-@media (max-width: 820px) {
+@media screen and (max-width: 820px) {
   .gcard { grid-template-columns: 40px 1fr; }
   .gactions { grid-column: 1 / -1; justify-content: flex-start; }
   .ed-top { grid-template-columns: 1fr 1fr; }
   .esc-grid { grid-template-columns: 1fr; }
-  .sheet { padding: 14px; }
-  .sh-head { grid-template-columns: 1fr; }
-  .sh-meta { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .sh-meta .m { border-left: 0; padding: 0; }
-  .sh-tabla, .sh-tabla tbody, .sh-tabla tr, .sh-tabla td { display: block; width: 100% !important; }
-  .sh-tabla thead { display: none; }
-  .sh-tabla td + td { border-left: 0; }
+  body:not(.imprimiendo) .sheet { padding: 14px; }
+  body:not(.imprimiendo) .sh-head { grid-template-columns: 1fr; }
+  body:not(.imprimiendo) .sh-meta { grid-template-columns: 1fr 1fr; gap: 8px; }
+  body:not(.imprimiendo) .sh-meta .m { border-left: 0; padding: 0; }
+  body:not(.imprimiendo) :is(.sh-tabla, .sh-tabla tbody, .sh-tabla tr, .sh-tabla td) { display: block; width: 100% !important; }
+  body:not(.imprimiendo) .sh-tabla thead { display: none; }
+  body:not(.imprimiendo) .sh-tabla td + td { border-left: 0; }
 }
 
-/* Modo compacto mientras se imprime (lo activa guiones.js) */
-body.imprimiendo .sheet { width: 733px; max-width: 733px; padding: 0; margin: 0; box-shadow: none; border-radius: 0; }
-body.imprimiendo .sh-head { padding-bottom: 10px; }
-body.imprimiendo .sh-tag b { font-size: 22px; }
-body.imprimiendo .sh-head h2 { font-size: 24px; }
-body.imprimiendo .sh-meta { padding: 8px 0; }
-body.imprimiendo .sh-tabla { margin-top: 10px; }
-body.imprimiendo .sh-tabla td { padding: 6px 8px; }
-body.imprimiendo .c-sk img { max-height: 150px; }
-body.imprimiendo .c-dlg { font-size: 13.5px; }
-body.imprimiendo .sh-foot { margin-top: 10px; padding-top: 8px; }
-
-/* =================== Impresión: solo las hojas =================== */
+/* Modo compacto mientras se imprime (lo activa guiones.js): cada guion en una sola hoja */
+body.imprimiendo .sheet { width: 733px; max-width: none; padding: 0; margin: 0; box-shadow: none; border-radius: 0; }
+body.imprimiendo .sh-head { gap: 14px; padding-bottom: 8px; }
+body.imprimiendo .sh-tag { padding: 7px 22px 7px 12px; }
+body.imprimiendo .sh-tag b { font-size: 18px; }
+body.imprimiendo .sh-tag span { font-size: 11px; }
+body.imprimiendo .sh-head h2 { font-size: 21px; }
+body.imprimiendo .sh-meta { padding: 6px 0; }
+body.imprimiendo .sh-meta .m, body.imprimiendo .sh-meta b { font-size: 10.5px; }
+body.imprimiendo .sh-meta .ic { font-size: 14px; }
+body.imprimiendo .sh-tabla { margin-top: 8px; font-size: 11px; border-radius: 6px; }
+body.imprimiendo .sh-tabla th { padding: 5px 6px; font-size: 11px; }
+body.imprimiendo .sh-tabla td { padding: 4px 6px; }
+body.imprimiendo .c-num { width: 66px; }
+body.imprimiendo .c-num > b { font-size: 18px; }
+body.imprimiendo .c-num .tag { margin: 3px 0 2px; padding: 2px 5px; font-size: 9px; }
+body.imprimiendo .c-num .t { font-size: 9.5px; }
+body.imprimiendo .checks { gap: 2px; margin-top: 4px; }
+body.imprimiendo .sb-chk { padding: 1px 3px; font-size: 8.5px; gap: 3px; }
+body.imprimiendo .sb-chk .box { width: 9px; height: 9px; }
+body.imprimiendo .c-sk { width: 27%; }
+body.imprimiendo .c-sk img { max-height: 112px; }
+body.imprimiendo .sk-vacio { height: 56px; font-size: 10px; }
+body.imprimiendo .c-dlg { font-size: 12px; line-height: 1.3; }
+body.imprimiendo .c-tec p { margin: 0 0 2px; font-size: 10px; }
+body.imprimiendo .c-tec ul { margin: 0 0 3px; padding-left: 12px; font-size: 9.5px; }
+body.imprimiendo .c-tec ul.tp li { font-size: 9.5px; }
+body.imprimiendo .sh-foot { margin-top: 8px; padding-top: 6px; gap: 10px; }
+body.imprimiendo .sh-foot .nt { font-size: 10.5px; gap: 10px; }
+body.imprimiendo .sh-foot .nt > b { font-size: 12px; }
+body.imprimiendo .sh-foot .dt { padding: 6px 12px; font-size: 11px; }
+body.imprimiendo .sh-foot .dt b { font-size: 15px; }
+body.imprimiendo .sheet .no-print { display: none !important; }
 @page { size: A4 portrait; margin: 8mm; }
 @media print {
-  body { background: #fff !important; }
+  :root { color-scheme: light; }
+  html, body { background: #fff !important; background-image: none !important; }
   .glow, #particles, header.top, .no-print, .toast, dialog, #view-ideas, #view-guiones, #view-ajustes { display: none !important; }
   main { padding: 0; max-width: none; }
   #view-storyboard { display: block !important; background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; backdrop-filter: none !important; animation: none !important; }
@@ -330,7 +351,6 @@ body.imprimiendo .sh-foot { margin-top: 10px; padding-top: 8px; }
   .sheet { box-shadow: none; border-radius: 0; max-width: none; padding: 0; break-after: page; }
   .sheet:last-child { break-after: auto; }
   .sh-tabla tr { break-inside: avoid; }
-  .c-sk img { max-height: 165px; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 
