@@ -324,6 +324,11 @@ async function vistaStoryboard() {
 }
 $("#sbSelect").onchange = e => { G.sbGuion = Number(e.target.value); pintarStoryboard([G.sbGuion]); };
 const esperarImagenes = () => Promise.all($$("#sbHojas img").map(i => i.complete ? null : new Promise(r => { i.onload = i.onerror = r; })));
+// En móvil los sketches salen en miniatura: tocar uno lo agranda o lo vuelve a minimizar
+$("#sbHojas").addEventListener("click", e => {
+  const img = e.target.closest(".c-sk img");
+  if (img && matchMedia("(max-width: 820px)").matches) img.classList.toggle("grande");
+});
 $("#sbImprimir").onclick = async () => { await esperarImagenes(); window.print(); };
 $("#sbTodos").onclick = async () => {
   await pintarStoryboard(G.lista.map(g => g.id));

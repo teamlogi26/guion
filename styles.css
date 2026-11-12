@@ -251,7 +251,8 @@ dialog .cloud { padding: 26px clamp(16px, 3vw, 30px); max-height: calc(100vh - 2
 .ed-foot { display: flex; gap: 10px; align-items: center; margin-top: 16px; }
 
 /* =================== Hoja de storyboard (como el PDF) =================== */
-#sbHojas { display: grid; gap: 24px; }
+#sbHojas { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.sheet { min-width: 0; }
 .sheet { background: #fff; color: #1f2328; border-radius: 14px; padding: 26px 26px 20px; max-width: 900px; margin: 0 auto; width: 100%; font-family: var(--font-main); box-shadow: 0 20px 50px rgba(0,0,0,.35); }
 .sh-head { display: grid; grid-template-columns: auto 1fr; gap: 22px; align-items: center; border-bottom: 2px solid #2d3036; padding-bottom: 14px; }
 .sh-tag { background: #2d3036; color: #fff; padding: 10px 30px 10px 16px; clip-path: polygon(0 0, 100% 0, 90% 100%, 0 100%); }
@@ -305,6 +306,11 @@ dialog .cloud { padding: 26px clamp(16px, 3vw, 30px); max-height: calc(100vh - 2
   body:not(.imprimiendo) :is(.sh-tabla, .sh-tabla tbody, .sh-tabla tr, .sh-tabla td) { display: block; width: 100% !important; }
   body:not(.imprimiendo) .sh-tabla thead { display: none; }
   body:not(.imprimiendo) .sh-tabla td + td { border-left: 0; }
+  /* Sketches minimizados en móvil: miniatura; al tocarla se agranda */
+  body:not(.imprimiendo) .sh-tabla td.c-sk { padding: 8px !important; text-align: center; }
+  body:not(.imprimiendo) .c-sk img { display: inline-block; width: auto; max-width: 45%; max-height: 92px; border-radius: 6px; border: 1px solid #d4d7db; cursor: zoom-in; }
+  body:not(.imprimiendo) .c-sk img.grande { max-width: 100%; max-height: none; cursor: zoom-out; }
+  body:not(.imprimiendo) .sk-vacio { height: 28px; font-size: 12px; }
 }
 
 /* Modo compacto mientras se imprime (lo activa guiones.js): cada guion en una sola hoja */
