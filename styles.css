@@ -559,3 +559,7 @@ label.pill select, label.pill input { height: 28px; border: 0; border-radius: 99
 label.pill.umbral input { width: 64px; }
 .limpiar { margin-left: auto; height: 36px; padding: 0 12px; border: 0; background: none; color: var(--naranja-claro); font: 600 13px var(--font-main); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .limpiar:hover { color: #fff; }
+
+/* Botón para generar el sketch con IA (Gemini) */
+.btn.ia { background: linear-gradient(135deg, var(--naranja), var(--naranja-claro)); color: #1a1208; border-color: transparent; font-weight: 700; }
+.btn.ia:disabled { opacity: .6; cursor: progress; }

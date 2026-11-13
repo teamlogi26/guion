@@ -166,11 +166,29 @@ function actualizarConteo() {
 // ---------- sketches: prompt para generar y banco para reutilizar ----------
 const ESTILO_SKETCH = "Boceto de storyboard a lápiz: grafito en blanco y negro sobre papel blanco, trazo limpio con sombreado suave, " +
   "formato horizontal 3:2, sin colores. El presentador es el hombre de la foto adjunta (usa su cara como referencia), " +
-  "en una oficina, camiseta oscura. Si hay texto, que sea corto y en español. Escena: ";
-function copiarPrompt(e) {
+  "con camiseta oscura, en el lugar que diga la escena (si no dice ninguno, en una oficina). Si hay texto, que sea corto y en español. Escena: ";
+function textoPrompt(e) {
   const pant = (e.texto_pantalla || "").replace(/^\d+:\d\d\s*/gm, "").trim();
-  const t = ESTILO_SKETCH + (e.sketch_prompt || e.dialogo || "") + (e.plano ? ` Plano: ${e.plano}.` : "") + (pant ? ` Texto visible: «${pant}».` : "");
+  return ESTILO_SKETCH + (e.sketch_prompt || e.dialogo || "") + (e.plano ? ` Plano: ${e.plano}.` : "") + (pant ? ` Texto visible: «${pant}».` : "");
+}
+function copiarPrompt(e) {
+  const t = textoPrompt(e);
   navigator.clipboard.writeText(t).then(() => toast("Prompt copiado. Pégalo en ChatGPT o Gemini con una foto de Wilber."), () => prompt("Copia el prompt:", t));
+}
+// Genera el sketch con Gemini a través de la Edge Function «generar-sketch» (la clave vive en Supabase, no en la web)
+async function generarSketch(e, i, btn, alListo) {
+  if (!(e.sketch_prompt || e.dialogo || "").trim()) return toast("Escribe primero el prompt del sketch o el diálogo de la escena.");
+  const antes = btn.textContent;
+  btn.disabled = true; btn.textContent = "Generando…";
+  try {
+    const { data, error } = await sb.functions.invoke("generar-sketch", { body: { prompt: textoPrompt(e), guion: G.editando?.numero ?? G.editando?.id, escena: i + 1 } });
+    let msg = data?.error;
+    if (error?.name === "FunctionsFetchError") msg = "la función «generar-sketch» no está publicada en Supabase o no responde.";
+    else if (error) { try { msg = (await error.context?.json())?.error; } catch { /* sin detalle */ } msg = msg || error.message; }
+    if (msg) return toast("No se pudo generar: " + msg);
+    alListo(data.url);
+    toast("Sketch generado. Si no te gusta, genera otro. Recuerda guardar.");
+  } finally { btn.disabled = false; btn.textContent = antes; }
 }
 
 let dlgBanco;
@@ -249,6 +267,10 @@ function pintarEscenas() {
               img.replaceChildren(h("img", { src: url, alt: "" }));
               toast("Sketch elegido. Recuerda guardar.");
             }) }, "Del banco"),
+            h("button", { type: "button", class: "btn small ia", title: "Genera el sketch con Gemini usando el prompt de la escena", onclick: ev => generarSketch(e, i, ev.currentTarget, url => {
+              e.sketch_url = url; urlIn.value = url;
+              img.replaceChildren(h("img", { src: url, alt: "" }));
+            }) }, "✨ Generar con IA"),
             h("button", { type: "button", class: "btn small", title: "Copia el prompt con el estilo lápiz para ChatGPT o Gemini", onclick: () => copiarPrompt(e) }, "Copiar prompt")),
           urlIn,
           h("details", {}, h("summary", {}, "Prompt del sketch"), ta("sketch_prompt", 3, "Descripción usada para generar la imagen"))),
