@@ -412,7 +412,10 @@ function hoja(g, escenas, total) {
         h("span", { class: "tag" }, TIPOS[e.tipo] || e.tipo),
         h("span", { class: "t" }, `${fmtT(e.inicio_s)} – ${fmtT(e.fin_s)} s`),
         h("div", { class: "checks" }, chk("grabado", "Grabado"), chk("exportado", "Exportado"))),
-      h("td", { class: "c-sk" }, e.sketch_url ? h("img", { src: e.sketch_url, alt: "Sketch escena " + (i + 1) }) : h("div", { class: "sk-vacio" }, "Sin sketch")),
+      h("td", { class: "c-sk" }, e.sketch_url ? h("img", { src: e.sketch_url, alt: "Sketch escena " + (i + 1) })
+        : /^Libreto original:/i.test(e.sketch_prompt || "")
+          ? h("div", { class: "sk-libreto" }, h("b", {}, "Libreto original"), (e.sketch_prompt || "").replace(/^Libreto original:\s*/i, ""))
+          : h("div", { class: "sk-vacio" }, "Sin sketch")),
       h("td", { class: "c-dlg" }, e.dialogo ? `“${e.dialogo}”` : h("i", {}, "Sin diálogo")),
       h("td", { class: "c-tec" },
         h("p", {}, h("b", {}, "Plano: "), e.plano || "—"),
