@@ -10,7 +10,10 @@ const ESTADOS_G = { pendiente: "Pendiente", guion_listo: "Guion listo", grabado:
 const PLANOS = ["Medio frontal", "Medio corto (frontal)", "Medio (frontal)", "Medio (3/4)", "Medio (perfil ligero)", "Medio + B-roll", "Medio + insertos", "Medio + planos de apoyo", "Medio (detalle del celular)", "Cercano (directo a cámara)", "Medio (ligero contrapicado)"];
 const CAMARAS = ["Estática", "Estática / B-roll", "Estática / leve acercamiento", "Estática (con sutil acercamiento)"];
 
-const G = { lista: [], editando: null, escenas: [], sbGuion: null };
+const G = { lista: [], editando: null, escenas: [], sbGuion: null, colTexto: false };
+// El espacio del sketch tiene texto propio (columna bloque.sketch_texto), independiente de la imagen.
+// Si la columna aún no existe en Supabase, la web sigue funcionando sin ese campo.
+sb.from("bloque").select("sketch_texto").limit(1).then(r => { G.colTexto = !r.error; });
 const palabras = s => (s || "").trim() ? s.trim().split(/\s+/).length : 0;
 const seg = n => Math.round(n / PALABRAS_POR_SEG);
 const fmtT = n => (n == null || n === "") ? "" : String(Number(n)).replace(".", ",");
@@ -409,6 +412,8 @@ function pintarEscenas() {
             }) }, "✨ Generar con IA"),
             h("button", { type: "button", class: "btn small", title: "Copia el prompt con el estilo lápiz para ChatGPT o Gemini", onclick: () => copiarPrompt(e) }, "Copiar prompt")),
           urlIn,
+          G.colTexto ? h("label", { class: "f sk-texto-f" }, "Texto en el espacio del sketch (se ve junto a la imagen)",
+            ta("sketch_texto", 3, "Ej.: Versión B: Errores al importar desde China…")) : null,
           h("details", {}, h("summary", {}, "Prompt del sketch"), ta("sketch_prompt", 3, "Descripción usada para generar la imagen"))),
         h("div", { class: "esc-fields" },
           h("label", { class: "f" }, h("span", {}, "Diálogo / voz en cámara ", wc), ta("dialogo", 4, "Lo que dice el presentador")),
@@ -448,6 +453,7 @@ async function guardarGuion(silencioso) {
       guion_id: g.id, orden: i + 1, tipo: e.tipo, inicio_s: e.inicio_s ?? null, fin_s: e.fin_s ?? null,
       dialogo: e.dialogo || "", texto_pantalla: e.texto_pantalla || "", plano: e.plano || null, camara: e.camara || null,
       edicion: e.edicion || [], sketch_url: e.sketch_url || null, sketch_prompt: e.sketch_prompt || null,
+      ...(G.colTexto ? { sketch_texto: (e.sketch_texto || "").trim() || null } : {}),
       grabado: !!e.grabado, exportado: !!e.exportado }));
     const r3 = await sb.from("bloque").insert(filas);
     if (r3.error) { fallo(r3.error, "guardar las escenas"); return false; }
@@ -561,6 +567,20 @@ async function pintarStoryboard(ids) {
   $("#sbHojas").replaceChildren(...ids.map(id => hoja(G.lista.find(g => g.id === id), escenas.filter(e => e.guion_id === id), total)));
 }
 
+// Espacio del sketch: imagen y texto son independientes; se muestra lo que haya (uno, otro o ambos).
+// Si el texto empieza con «Algo:» (título corto), ese «Algo» sale como título pequeño.
+function celdaSketch(e, i) {
+  let txt = (e.sketch_texto || "").trim();
+  if (!txt && /^Libreto original:/i.test(e.sketch_prompt || "")) txt = e.sketch_prompt.trim();   // guiones anteriores
+  const partes = [];
+  if (e.sketch_url) partes.push(h("img", { src: e.sketch_url, alt: "Sketch escena " + (i + 1) }));
+  if (txt) {
+    const m = txt.match(/^([^:\n]{2,30}):\s*([\s\S]*)$/);
+    partes.push(h("div", { class: "sk-libreto" }, m ? h("b", {}, m[1].trim()) : null, m ? m[2] : txt));
+  }
+  return partes.length ? partes : [h("div", { class: "sk-vacio" }, "Sin sketch")];
+}
+
 function hoja(g, escenas, total) {
   const dur = Number(g.duracion_estimada_s);
   const meta = (icono, k, v) => h("div", { class: "m" }, h("span", { class: "ic", "aria-hidden": "true" }, icono), h("div", {}, h("b", {}, k), h("span", {}, v || "—")));
@@ -582,10 +602,7 @@ function hoja(g, escenas, total) {
         h("span", { class: "tag" }, TIPOS[e.tipo] || e.tipo),
         h("span", { class: "t" }, `${fmtT(e.inicio_s)} – ${fmtT(e.fin_s)} s`),
         h("div", { class: "checks" }, chk("grabado", "Grabado"), chk("exportado", "Exportado"))),
-      h("td", { class: "c-sk" }, e.sketch_url ? h("img", { src: e.sketch_url, alt: "Sketch escena " + (i + 1) })
-        : /^Libreto original:/i.test(e.sketch_prompt || "")
-          ? h("div", { class: "sk-libreto" }, h("b", {}, "Libreto original"), (e.sketch_prompt || "").replace(/^Libreto original:\s*/i, ""))
-          : h("div", { class: "sk-vacio" }, "Sin sketch")),
+      h("td", { class: "c-sk" }, ...celdaSketch(e, i)),
       h("td", { class: "c-dlg" }, e.dialogo ? `“${e.dialogo}”` : h("i", {}, "Sin diálogo")),
       h("td", { class: "c-tec" },
         h("p", {}, h("b", {}, "Plano: "), e.plano || "—"),

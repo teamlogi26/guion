@@ -831,3 +831,8 @@ body.imprimiendo .sb-nav { display: none !important; }
   .idea-titulo input { font-size: 16px; }
   .idea-voto.solo .estrellas button { font-size: 30px; }
 }
+
+/* Texto propio del espacio del sketch (junto a la imagen o solo) */
+.sk-libreto { white-space: pre-line; }
+.c-sk img + .sk-libreto { border-top: 1px solid #e3e5e8; }
+.sk-texto-f textarea { font-size: 13px; }
