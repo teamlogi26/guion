@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ReelLab</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=24">
+<link rel="stylesheet" href="styles.css?v=27">
 </head>
 <body>
 <div class="glow" id="glow"></div>
@@ -86,25 +87,42 @@
         <div class="f2-top">
           <label class="buscar"><span aria-hidden="true">⌕</span><input type="search" id="fText" placeholder="Buscar por título, texto o palabra clave"></label>
           <div class="seg" id="segGuion" role="group" aria-label="Filtrar por guion">
-            <button type="button" data-v="" class="on">Todas</button>
-            <button type="button" data-v="sin">Sin guion</button>
-            <button type="button" data-v="con">Con GUION</button>
+            <button type="button" data-v="" class="on" aria-pressed="true">Todas</button>
+            <button type="button" data-v="sin" aria-pressed="false">Sin guion</button>
+            <button type="button" data-v="con" aria-pressed="false">Con GUION</button>
           </div>
           <input type="hidden" id="fGuion" value="">
         </div>
-        <div class="f2-pills">
-          <label class="pill">Lote <select id="fLote"></select></label>
-          <label class="pill">Pilar <select id="fPilar"></select></label>
-          <label class="pill">Temática <select id="fTematica"></select></label>
-          <label class="pill">Estado <select id="fEstado"></select></label>
-          <label class="pill">Ordenar <select id="fOrden">
-            <option value="voto">Voto del equipo</option>
-            <option value="puntaje">Calculadora</option>
-            <option value="numero">Número</option>
-            <option value="reciente">Más recientes</option>
-          </select></label>
-          <label class="pill umbral" title="Puntaje mínimo de la calculadora para resaltar una idea">Umbral <input type="number" id="fUmbral" step="0.5" min="0"></label>
+        <div class="fx-quick">
+          <div class="seg" id="segVoto" role="group" aria-label="Filtrar por mi voto">
+            <button type="button" data-v="" class="on" aria-pressed="true">Cualquiera</button>
+            <button type="button" data-v="falta" aria-pressed="false">Me falta votar</button>
+            <button type="button" data-v="voto" aria-pressed="false">Ya voté</button>
+          </div>
+          <input type="hidden" id="fxVoto" value="">
+          <button type="button" class="fx-toggle" id="fxToggle" aria-expanded="false" aria-controls="fxPanel">Filtros <b id="fxCount">0</b><span class="fx-caret" aria-hidden="true">▾</span></button>
+        </div>
+        <div class="fx-panel" id="fxPanel" hidden>
+          <div class="f2-pills">
+            <label class="pill">Lote <select id="fLote"></select></label>
+            <label class="pill">Pilar <select id="fPilar"></select></label>
+            <label class="pill">Temática <select id="fTematica"></select></label>
+            <label class="pill">Estado <select id="fEstado"></select></label>
+            <label class="pill">Ordenar <select id="fOrden">
+              <option value="voto">Voto del equipo</option>
+              <option value="puntaje">Calculadora</option>
+              <option value="numero">Número</option>
+              <option value="reciente">Más recientes</option>
+            </select></label>
+            <label class="pill umbral" title="Puntaje mínimo de la calculadora para resaltar una idea">Umbral <input type="number" id="fUmbral" step="0.5" min="0"></label>
+          </div>
           <button type="button" class="limpiar" id="fLimpiar">Limpiar filtros</button>
+        </div>
+        <div class="fx-chips" id="fxChips" aria-live="polite"></div>
+        <div class="fx-leyenda" aria-label="Leyenda de colores">
+          <span class="fx-ley pend"><i></i>Falta tu voto</span>
+          <span class="fx-ley voto"><i></i>Ya votaste</span>
+          <span class="fx-ley usada"><i></i>Usada en guion</span>
         </div>
       </div>
 
@@ -202,10 +220,20 @@
           <h2>Storyboard</h2>
         </div>
         <div class="actions">
-          <select id="sbSelect" aria-label="Guion"></select>
           <button class="btn" id="sbEditar">Editar guion</button>
           <button class="btn" id="sbTodos">PDF de todos</button>
           <button class="btn primary" id="sbImprimir">Imprimir / PDF</button>
+        </div>
+        <div class="sb-nav" id="sbNav">
+          <span class="sb-nav-label" id="sbNavLabel">Guion que estás viendo</span>
+          <div class="sb-nav-row">
+            <button type="button" class="btn sb-paso" id="sbPrev" aria-label="Guion anterior"><span aria-hidden="true">◀</span><span class="sb-paso-txt">Anterior</span></button>
+            <div class="sb-picker" id="sbPicker">
+              <button type="button" class="sb-picker-btn" id="sbPickerBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="sbMenu" aria-labelledby="sbNavLabel sbPickerBtn"></button>
+              <div class="sb-menu" id="sbMenu" role="listbox" aria-labelledby="sbNavLabel" tabindex="-1" hidden></div>
+            </div>
+            <button type="button" class="btn sb-paso" id="sbNext" aria-label="Guion siguiente"><span class="sb-paso-txt">Siguiente</span><span aria-hidden="true">▶</span></button>
+          </div>
         </div>
       </div>
       <p class="hint no-print">Marca <b>Grabado</b> y <b>Exportado</b> en cada escena: se guarda al instante. Para el PDF, en la ventana de impresión elige «Guardar como PDF».</p>
@@ -375,9 +403,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="config.js?v=24"></script>
-<script src="app.js?v=24"></script>
-<script src="guiones.js?v=24"></script>
-<script src="ganchos.js?v=24"></script>
+<script src="config.js?v=27"></script>
+<script src="app.js?v=27"></script>
+<script src="guiones.js?v=27"></script>
+<script src="ganchos.js?v=27"></script>
 </body>
 </html>

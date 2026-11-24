@@ -323,14 +323,43 @@ $("#fUmbral").value = getUmbral();
 // Filtro por guion: Todas / Sin guion / Con GUION
 $$("#segGuion button").forEach(b => b.onclick = () => {
   $("#fGuion").value = b.dataset.v;
-  $$("#segGuion button").forEach(x => x.classList.toggle("on", x === b));
+  $$("#segGuion button").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); });
   pintarIdeas();
 });
+// Filtro rápido por mi voto: Cualquiera / Me falta votar / Ya voté
+$$("#segVoto button").forEach(b => b.onclick = () => {
+  $("#fxVoto").value = b.dataset.v;
+  $$("#segVoto button").forEach(x => { x.classList.toggle("on", x === b); x.setAttribute("aria-pressed", x === b); });
+  pintarIdeas();
+});
+// Panel plegable de filtros
+$("#fxToggle").onclick = () => {
+  const abrir = $("#fxPanel").hidden;
+  $("#fxPanel").hidden = !abrir;
+  $("#fxToggle").setAttribute("aria-expanded", abrir);
+  $("#fxToggle").classList.toggle("abierto", abrir);
+};
 $("#fLimpiar").onclick = () => {
   ["fText", "fLote", "fPilar", "fTematica", "fEstado"].forEach(id => $("#" + id).value = "");
   $("#fOrden").value = "voto";
+  $("#segVoto button").click();
   $("#segGuion button").click();
 };
+// Chips removibles de filtros activos + contador del botón «Filtros»
+function pintarChipsFiltros() {
+  const txt = id => { const s = $("#" + id); return s.selectedOptions[0]?.textContent || s.value; };
+  const quitar = (id, vacio = "") => () => { $("#" + id).value = vacio; pintarIdeas(); };
+  const panel = [["fLote", "Lote"], ["fPilar", "Pilar"], ["fTematica", "Temática"], ["fEstado", "Estado"]]
+    .filter(([id]) => $("#" + id).value).map(([id, n]) => ({ t: `${n}: ${txt(id)}`, f: quitar(id) }));
+  if ($("#fOrden").value !== "voto") panel.push({ t: "Orden: " + txt("fOrden"), f: quitar("fOrden", "voto") });
+  const otros = [];
+  if ($("#fText").value.trim()) otros.push({ t: `«${$("#fText").value.trim()}»`, f: quitar("fText") });
+  const g = $("#segGuion button.on"); if ($("#fGuion").value && g) otros.push({ t: g.textContent, f: () => $("#segGuion button").click() });
+  const vb = $("#segVoto button.on"); if ($("#fxVoto").value && vb) otros.push({ t: vb.textContent, f: () => $("#segVoto button").click() });
+  $("#fxCount").textContent = panel.length;
+  $("#fxCount").hidden = !panel.length;
+  $("#fxChips").replaceChildren(...[...panel, ...otros].map(c => h("button", { type: "button", class: "fx-chip", title: "Quitar filtro", onclick: c.f }, c.t, h("span", { "aria-hidden": "true" }, " ×"))));
+}
 ["fText", "fLote", "fPilar", "fTematica", "fEstado", "fOrden", "fUmbral"].forEach(id => $("#" + id).addEventListener("input", () => {
   if (id === "fUmbral") { try { localStorage.setItem("umbral", $("#fUmbral").value); } catch {} }
   pintarIdeas();
@@ -342,13 +371,16 @@ function tarjetaIdea(i, umbral, max) {
   const p = Number(i.puntaje_total), v = votosDe(i.id), prom = promedio(v);
   const alto = i.calificada && p >= umbral && i.estado !== "descartada";
   const mio = state.usuario && v.find(x => x.votante_id === state.usuario.id);
-  return h("article", { class: "idea" + (alto ? " top" : "") + (mio ? " votada" : "") + (guionDe(i) ? " con-guion" : "") + (i.estado === "descartada" ? " descartada" : ""), tabindex: 0,
+  const activos = state.votantes.filter(x => x.activo);
+  return h("article", { class: "idea" + (alto ? " top" : "") + (mio ? " votada" : "") + (guionDe(i) ? " con-guion usada" : "") + (!mio && !guionDe(i) && state.usuario && i.estado !== "descartada" ? " falta-voto" : "") + (i.estado === "descartada" ? " descartada" : ""), tabindex: 0,
     onclick: () => abrirIdea(i), onkeydown: e => { if (e.key === "Enter") abrirIdea(i); } },
+    guionDe(i) && h("span", { class: "cinta-guion", "aria-hidden": "true" }, `EN GUION ${guionDe(i).numero ?? ""}`),
     h("div", { class: "cuerpo" },
       h("div", { class: "head" }, h("span", { class: "num" }, i.numero ?? "–"), h("h3", {}, i.titulo)),
       h("div", { class: "chips" },
         guionDe(i) && h("span", { class: "chip guion-tag", title: "Abrir el guion", onclick: ev => { ev.stopPropagation(); window.__logi.abrirGuion?.(guionDe(i).id); } }, `GUION ${guionDe(i).numero ?? ""}`),
         mio && h("span", { class: "chip votaste" }, `✓ Votaste ★${mio.puntaje}`),
+        !mio && !guionDe(i) && state.usuario && i.estado !== "descartada" && h("span", { class: "chip falta-tag" }, "Falta tu voto"),
         i.pilar && h("span", { class: "chip " + pilarClass(i.pilar) }, i.pilar),
         i.tematica && h("span", { class: "chip" }, i.tematica),
         i.herramienta && h("span", { class: "chip" }, "🔧 " + i.herramienta),
@@ -358,6 +390,10 @@ function tarjetaIdea(i, umbral, max) {
       i.calificada && h("div", { class: "dots", title: "Criterios en Sí" }, CRITERIOS.map(c => h("i", { class: i[c] ? "on" : "" })))),
     // Voto y calculadora como barras que se llenan
     h("div", { class: "metricas" },
+      h("div", { class: "equipo-votos", title: `Votaron ${v.length} de ${activos.length}` },
+        h("span", { class: "ev-dots" }, activos.map(vt => { const votó = v.some(x => x.votante_id === vt.id);
+          return h("i", { class: (votó ? "on" : "") + (state.usuario && vt.id === state.usuario.id ? " yo" : ""), title: vt.nombre + (votó ? " · votó" : " · falta") }); })),
+        h("small", {}, `${v.length}/${activos.length} del equipo`)),
       h("div", { class: "met-row" }, h("small", {}, `Voto del equipo · ${v.length} voto${v.length === 1 ? "" : "s"}`),
         h("span", {}, h("b", {}, prom != null ? fmt(prom) : "–"), " / 5")),
       h("div", { class: "barra voto" }, h("i", { style: `width:${prom != null ? prom / 5 * 100 : 0}%` })),
@@ -377,7 +413,10 @@ function pintarIdeas() {
   const coincide = i => (!fl || String(i.lote_id) === fl) && (!fp || i.pilar === fp) && (!ft || i.tematica === ft) &&
     (!q || [i.titulo, i.texto_base, i.palabras_clave].some(t => (t || "").toLowerCase().includes(q)));
   const fg = $("#fGuion").value;
-  const activas = state.ideas.filter(i => coincide(i) && (!fe || (fe === "en_guion" ? enGuion(i) : i.estado === fe && !enGuion(i)))
+  const fv = state.usuario ? $("#fxVoto").value : "";
+  const miVoto = i => votosDe(i.id).some(x => x.votante_id === state.usuario.id);
+  pintarChipsFiltros();
+  const activas = state.ideas.filter(i => coincide(i) && (!fv || (fv === "voto" ? miVoto(i) : !miVoto(i))) && (!fe || (fe === "en_guion" ? enGuion(i) : i.estado === fe && !enGuion(i)))
     && (!fg || (fg === "con" ? enGuion(i) : !enGuion(i))));
   const prom = i => promedio(votosDe(i.id)) ?? -1;
   const por = {
@@ -806,5 +845,5 @@ $("#savePesos").onclick = async () => {
 
 // Para pruebas desde la consola del navegador
 window.__logi = { state, pintarIdeas, abrirIdea, pintarAjustes, llenarSelects, entrar, filaVoto, arriba,
-  sb, h, $, $$, toast, fallo, valores, irA, vistas };
+  sb, h, $, $$, toast, fallo, valores, irA, vistas, votosDe, puntaje, puntajeMax };
 })();

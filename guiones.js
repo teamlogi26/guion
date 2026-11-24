@@ -38,35 +38,168 @@ async function vistaGuiones() {
   await cargarGuiones();
   pintarLista();
 }
+// ---------- estado: píldora de color + menú propio ----------
+const ORDEN_G = Object.keys(ESTADOS_G);
+const fmt1 = n => (Math.round(n * 10) / 10).toLocaleString("es-CO");
+const estadoDe = g => ESTADOS_G[g.estado] ? g.estado : "pendiente";
+const pildora = (estado, extra = "") => h("span", { class: "est-pill " + extra, "data-estado": estado },
+  h("i", { class: "est-dot", "aria-hidden": "true" }), ESTADOS_G[estado] || estado);
+
+// Un solo menú abierto a la vez; se cierra con Escape, clic fuera o al elegir
+let menuAbierto = null;
+function cerrarMenu(devolverFoco) {
+  if (!menuAbierto) return;
+  const { menu, btn } = menuAbierto;
+  menu.hidden = true;
+  btn.setAttribute("aria-expanded", "false");
+  menuAbierto = null;
+  if (devolverFoco) btn.focus();
+}
+function abrirMenu(btn, menu) {
+  cerrarMenu();
+  menu.hidden = false;
+  btn.setAttribute("aria-expanded", "true");
+  menuAbierto = { btn, menu };
+  (menu.querySelector('[aria-checked="true"], [aria-selected="true"]') || menu.querySelector("button"))?.focus();
+}
+document.addEventListener("click", e => {
+  if (menuAbierto && !menuAbierto.menu.contains(e.target) && !menuAbierto.btn.contains(e.target)) cerrarMenu();
+});
+document.addEventListener("keydown", e => {
+  if (!menuAbierto) return;
+  if (e.key === "Escape") { e.preventDefault(); cerrarMenu(true); return; }
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    const ops = [...menuAbierto.menu.querySelectorAll("button")];
+    if (!ops.length) return;
+    e.preventDefault();
+    const i = ops.indexOf(document.activeElement);
+    ops[(i + (e.key === "ArrowDown" ? 1 : -1) + ops.length) % ops.length].focus();
+  }
+});
+// Al mover el foco fuera del menú (Tab) también se cierra
+document.addEventListener("focusin", e => {
+  if (menuAbierto && !menuAbierto.menu.contains(e.target) && !menuAbierto.btn.contains(e.target)) cerrarMenu();
+});
+
+function selectorEstado(g, alCambiar) {
+  const est = estadoDe(g);
+  const btn = h("button", { type: "button", class: "est-pill est-btn", "data-estado": est,
+    "aria-haspopup": "menu", "aria-expanded": "false", title: "Cambiar estado",
+    onclick: e => { e.stopPropagation(); menuAbierto?.btn === btn ? cerrarMenu() : abrirMenu(btn, menu); } },
+    h("i", { class: "est-dot", "aria-hidden": "true" }), ESTADOS_G[est], h("span", { class: "est-caret", "aria-hidden": "true" }, "▾"));
+  const menu = h("div", { class: "est-menu", role: "menu", "aria-label": "Estado del guion", hidden: true },
+    ORDEN_G.map(k => h("button", { type: "button", role: "menuitemradio", "aria-checked": String(k === est), "data-estado": k,
+      onclick: async e => {
+        e.stopPropagation();
+        cerrarMenu(true);
+        if (k === g.estado) return;
+        btn.disabled = true;
+        const { error } = await sb.from("guion").update({ estado: k }).eq("id", g.id);
+        btn.disabled = false;
+        if (error) return fallo(error, "cambiar el estado");
+        g.estado = k; toast("Estado: " + ESTADOS_G[k]);
+        alCambiar?.();
+      } }, h("i", { class: "est-dot", "aria-hidden": "true" }), ESTADOS_G[k])));
+  return h("div", { class: "est-wrap" }, btn, menu);
+}
+
+// Mini stepper de 5 pasos con el avance del guion
+function stepper(g) {
+  const n = ORDEN_G.indexOf(estadoDe(g));
+  return h("ol", { class: "g-stepper", "data-estado": estadoDe(g), "aria-label": `Paso ${n + 1} de ${ORDEN_G.length}: ${ESTADOS_G[estadoDe(g)]}` },
+    ORDEN_G.map((k, i) => h("li", { class: i < n ? "hecho" : i === n ? "actual" : "", title: ESTADOS_G[k] })));
+}
+
+// Idea de origen: número, voto del equipo y calculadora (sutil)
+function origenIdea(g) {
+  if (g.idea_id == null) return null;
+  const idea = (L.state.ideas || []).find(i => i.id === g.idea_id);
+  if (!idea) return g.idea_numero != null ? h("div", { class: "g-origen" }, h("span", { class: "g-idea" }, `Idea #${g.idea_numero}`)) : null;
+  const votos = L.votosDe ? L.votosDe(idea.id) : (L.state.votos || []).filter(v => v.idea_id === idea.id);
+  const prom = votos.length ? votos.reduce((s, v) => s + v.puntaje, 0) / votos.length : null;
+  const max = L.puntajeMax?.();
+  const p = Number(idea.puntaje_total);
+  const abrir = L.abrirIdea ? e => { e.stopPropagation(); L.abrirIdea(idea); } : null;
+  return h("div", { class: "g-origen" },
+    abrir ? h("button", { type: "button", class: "g-idea", title: "Abrir la idea de origen", onclick: abrir }, `Idea #${idea.numero ?? "–"}`)
+          : h("span", { class: "g-idea" }, `Idea #${idea.numero ?? "–"}`),
+    prom != null && h("span", { class: "g-met", title: `Voto del equipo · ${votos.length} voto${votos.length === 1 ? "" : "s"}` }, `★ ${fmt1(prom)}`),
+    idea.calificada && !isNaN(p) && h("span", { class: "g-met", title: "Calculadora de viralidad" }, `${fmt1(p)}${max ? "/" + fmt1(max) : ""}`));
+}
+
+// ---------- agrupación por mes (según creado_en) ----------
+const MESES = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+function mesDe(g) {
+  const d = g.creado_en ? new Date(g.creado_en) : null;
+  if (!d || isNaN(d)) return { clave: "0000-00", etiqueta: "Sin fecha" };
+  return { clave: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, etiqueta: `${MESES[d.getMonth()]} ${d.getFullYear()}` };
+}
+function porMes(lista) {
+  const grupos = new Map();
+  for (const g of lista) {
+    const m = mesDe(g);
+    if (!grupos.has(m.clave)) grupos.set(m.clave, { ...m, items: [] });
+    grupos.get(m.clave).items.push(g);
+  }
+  return [...grupos.values()].sort((a, b) => b.clave.localeCompare(a.clave));
+}
+// Meses plegados: comodidad por navegador, no es crítico si falla
+const CLAVE_PLEGADOS = "guiones_meses_plegados";
+let plegados = new Set();
+try { plegados = new Set(JSON.parse(localStorage.getItem(CLAVE_PLEGADOS) || "[]")); } catch { /* sin almacenamiento */ }
+const guardarPlegados = () => { try { localStorage.setItem(CLAVE_PLEGADOS, JSON.stringify([...plegados])); } catch { /* sin almacenamiento */ } };
+
+function tarjetaGuion(g) {
+  const dur = Number(g.duracion_estimada_s), max = Number(g.duracion_max_s) || 30;
+  const art = h("article", { class: "gcard g-est", "data-estado": estadoDe(g), "data-id": g.id },
+    h("div", { class: "gnum" }, String(g.numero ?? "–").padStart(2, "0")),
+    h("div", { class: "gbody" },
+      origenIdea(g),
+      h("h3", {}, g.titulo),
+      h("div", { class: "chips" },
+        g.pilar && h("span", { class: "chip " + pilarClass(g.pilar) }, g.pilar),
+        g.tematica && h("span", { class: "chip" }, g.tematica),
+        g.objetivo && h("span", { class: "chip" }, g.objetivo),
+        h("span", { class: "chip" + (dur > max ? " warn" : "") }, `≈ ${dur} s de ${max} s · ${g.palabras} palabras`)),
+      stepper(g),
+      h("div", { class: "progress" },
+        barra("Grabado", g.escenas_grabadas, g.escenas),
+        barra("Exportado", g.escenas_exportadas, g.escenas))),
+    h("div", { class: "gactions" },
+      selectorEstado(g, () => {
+        const nueva = tarjetaGuion(g);
+        art.replaceWith(nueva);
+        nueva.querySelector(".est-btn")?.focus();
+      }),
+      h("button", { class: "btn small", onclick: () => abrirEditor(g.id) }, "Editar"),
+      h("button", { class: "btn small primary", onclick: () => { G.sbGuion = g.id; L.irA("storyboard"); } }, "Storyboard")));
+  return art;
+}
+
 function pintarLista() {
   const cont = $("#gCards");
+  cerrarMenu();
   if (!G.lista.length) {
     cont.replaceChildren(h("div", { class: "empty" }, h("b", {}, "Todavía no hay guiones"),
       "Crea uno desde una idea aprobada con «+ Nuevo guion», o corre supabase/04_storyboard.sql para cargar los 6 elegidos."));
     return;
   }
-  cont.replaceChildren(...G.lista.map(g => {
-    const dur = Number(g.duracion_estimada_s), max = Number(g.duracion_max_s) || 30;
-    const estado = h("select", { class: "estado-sel", onclick: e => e.stopPropagation(), onchange: async e => {
-      const { error } = await sb.from("guion").update({ estado: e.target.value }).eq("id", g.id);
-      if (error) return fallo(error, "cambiar el estado");
-      g.estado = e.target.value; toast("Estado: " + ESTADOS_G[g.estado]);
-    } }, Object.entries(ESTADOS_G).map(([k, v]) => h("option", { value: k, selected: k === g.estado }, v)));
-    return h("article", { class: "gcard" },
-      h("div", { class: "gnum" }, String(g.numero ?? "–").padStart(2, "0")),
-      h("div", { class: "gbody" },
-        h("h3", {}, g.titulo),
-        h("div", { class: "chips" },
-          g.pilar && h("span", { class: "chip " + pilarClass(g.pilar) }, g.pilar),
-          g.tematica && h("span", { class: "chip" }, g.tematica),
-          g.objetivo && h("span", { class: "chip" }, g.objetivo),
-          h("span", { class: "chip" + (dur > max ? " warn" : "") }, `≈ ${dur} s de ${max} s · ${g.palabras} palabras`)),
-        h("div", { class: "progress" },
-          barra("Grabado", g.escenas_grabadas, g.escenas),
-          barra("Exportado", g.escenas_exportadas, g.escenas))),
-      h("div", { class: "gactions" }, estado,
-        h("button", { class: "btn small", onclick: () => abrirEditor(g.id) }, "Editar"),
-        h("button", { class: "btn small primary", onclick: () => { G.sbGuion = g.id; L.irA("storyboard"); } }, "Storyboard")));
+  cont.replaceChildren(...porMes(G.lista).map(m => {
+    const abierto = !plegados.has(m.clave);
+    const idLista = "gMes-" + m.clave;
+    const lista = h("div", { class: "list g-mes-lista", id: idLista, hidden: !abierto }, m.items.map(tarjetaGuion));
+    const cab = h("button", { type: "button", class: "g-mes-head", "aria-expanded": String(abierto), "aria-controls": idLista,
+      onclick: () => {
+        const ab = lista.hidden;
+        lista.hidden = !ab;
+        cab.setAttribute("aria-expanded", String(ab));
+        ab ? plegados.delete(m.clave) : plegados.add(m.clave);
+        guardarPlegados();
+      } },
+      h("span", { class: "g-mes-caret", "aria-hidden": "true" }, "▾"),
+      h("span", { class: "g-mes-nom" }, m.etiqueta),
+      h("span", { class: "g-mes-n" }, `${m.items.length} guion${m.items.length === 1 ? "" : "es"}`));
+    return h("section", { class: "g-mes" }, cab, lista);
   }));
 }
 function barra(nombre, n, total) {
@@ -138,6 +271,8 @@ async function abrirEditor(id) {
   f.numero.value = g.numero ?? "";
   f.objetivo.replaceChildren(h("option", { value: "" }, "—"), ...L.valores("objetivo").map(v => h("option", { value: v, selected: v === g.objetivo }, v)));
   f.estado.replaceChildren(...Object.entries(ESTADOS_G).map(([k, v]) => h("option", { value: k, selected: k === g.estado }, v)));
+  f.estado.classList.add("est-select");
+  f.estado.dataset.estado = estadoDe(g);
   f.duracion_max_s.value = String(g.duracion_max_s || 60);
   f.locacion.value = g.locacion || "";
   f.iluminacion.value = g.iluminacion || "";
@@ -153,6 +288,7 @@ async function abrirEditor(id) {
 $("#edVolver").onclick = () => vistaGuiones();
 $("#edStoryboard").onclick = async () => { if (await guardarGuion(true)) { G.sbGuion = G.editando.id; L.irA("storyboard"); } };
 $("#guionForm").addEventListener("input", actualizarConteo);
+$("#guionForm").estado.addEventListener("change", e => { e.target.dataset.estado = e.target.value; });
 
 function actualizarConteo() {
   const total = G.escenas.reduce((s, e) => s + palabras(e.dialogo), 0);
@@ -332,19 +468,53 @@ $("#edBorrar").onclick = async () => {
 // =====================================================================
 //  STORYBOARD
 // =====================================================================
+// Selector propio: lista agrupada por mes (mismo orden que la pestaña Guiones) + Anterior / Siguiente
+const ordenSb = () => porMes(G.lista).flatMap(m => m.items);
+function pintarSelectorSb() {
+  const btn = $("#sbPickerBtn"), menu = $("#sbMenu");
+  const g = G.lista.find(x => x.id === G.sbGuion);
+  const orden = ordenSb(), i = orden.findIndex(x => x.id === G.sbGuion);
+  $("#sbNav").hidden = !G.lista.length;
+  btn.replaceChildren(...[].concat(g
+    ? [h("span", { class: "sb-pk-num" }, `Guion ${g.numero ?? "–"}`), h("span", { class: "sb-pk-tit" }, g.titulo),
+       pildora(estadoDe(g), "mini"), h("span", { class: "sb-pk-caret", "aria-hidden": "true" }, "▾")]
+    : h("span", { class: "sb-pk-tit" }, "Elige un guion")));
+  $("#sbPrev").disabled = i <= 0;
+  $("#sbNext").disabled = i < 0 || i >= orden.length - 1;
+  menu.replaceChildren(...porMes(G.lista).map(m => h("div", { class: "sb-menu-grupo", role: "group", "aria-label": m.etiqueta },
+    h("div", { class: "sb-menu-mes", "aria-hidden": "true" }, `${m.etiqueta} · ${m.items.length}`),
+    m.items.map(x => h("button", { type: "button", role: "option", class: "sb-op", "aria-selected": String(x.id === G.sbGuion),
+      onclick: e => { e.stopPropagation(); cerrarMenu(true); elegirSb(x.id); } },
+      h("span", { class: "sb-pk-num" }, String(x.numero ?? "–").padStart(2, "0")),
+      h("span", { class: "sb-pk-tit" }, x.titulo),
+      pildora(estadoDe(x), "mini"))))));
+}
+async function elegirSb(id) {
+  if (id == null) return;
+  G.sbGuion = id;
+  pintarSelectorSb();
+  await pintarStoryboard([G.sbGuion]);
+}
 async function vistaStoryboard() {
   await cargarGuiones();
-  const sel = $("#sbSelect");
-  sel.replaceChildren(...G.lista.map(g => h("option", { value: g.id }, `Guion ${g.numero ?? "–"} · ${g.titulo}`)));
+  cerrarMenu();
   if (!G.lista.length) {
+    pintarSelectorSb();
     $("#sbHojas").replaceChildren(h("div", { class: "empty" }, h("b", {}, "No hay guiones para mostrar"), "Crea uno en la pestaña Guiones."));
     return;
   }
-  if (!G.lista.some(g => g.id === G.sbGuion)) G.sbGuion = G.lista[0].id;
-  sel.value = G.sbGuion;
+  if (!G.lista.some(g => g.id === G.sbGuion)) G.sbGuion = ordenSb()[0].id;
+  pintarSelectorSb();
   await pintarStoryboard([G.sbGuion]);
 }
-$("#sbSelect").onchange = e => { G.sbGuion = Number(e.target.value); pintarStoryboard([G.sbGuion]); };
+$("#sbPickerBtn").onclick = e => {
+  e.stopPropagation();
+  const btn = e.currentTarget;
+  menuAbierto?.btn === btn ? cerrarMenu() : abrirMenu(btn, $("#sbMenu"));
+};
+const pasoSb = d => { const o = ordenSb(), i = o.findIndex(x => x.id === G.sbGuion); elegirSb(o[i + d]?.id); };
+$("#sbPrev").onclick = () => pasoSb(-1);
+$("#sbNext").onclick = () => pasoSb(1);
 const esperarImagenes = () => Promise.all($$("#sbHojas img").map(i => i.complete ? null : new Promise(r => { i.onload = i.onerror = r; })));
 // En móvil los sketches salen en miniatura: tocar uno lo agranda o lo vuelve a minimizar
 $("#sbHojas").addEventListener("click", e => {
