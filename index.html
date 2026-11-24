@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=27">
+<link rel="stylesheet" href="styles.css?v=29">
 </head>
 <body>
 <div class="glow" id="glow"></div>
@@ -277,12 +277,23 @@
       <h2 id="ideaTitle">Nueva idea</h2>
       <button class="x" type="button" data-close aria-label="Cerrar">×</button>
     </div>
+    <!-- Lectura: título y texto base a todo el ancho, y el voto justo debajo -->
+    <div class="idea-lectura">
+      <label class="f idea-titulo">Idea central (título) <input type="text" name="titulo" required></label>
+      <div class="parecidas" id="parecidas" hidden></div>
+      <label class="f idea-texto">Guion / texto base <textarea name="texto_base" rows="9"></textarea></label>
+      <input type="hidden" name="texto_pantalla">
+      <div class="idea-voto" id="votoBox">
+        <div class="idea-voto-head">
+          <h3 id="votoTit">Tu voto</h3>
+          <p class="hint" id="votoProm">Sin votos</p>
+        </div>
+        <div id="votos"></div>
+      </div>
+    </div>
+
     <div class="form-grid">
       <div class="fields">
-        <label class="f">Idea central (título) <input type="text" name="titulo" required></label>
-        <div class="parecidas" id="parecidas" hidden></div>
-        <label class="f">Guion / texto base <textarea name="texto_base" rows="6"></textarea></label>
-        <label class="f">Texto en pantalla (una línea por texto: «0:04 10 PEDIDOS») <textarea name="texto_pantalla" rows="3"></textarea></label>
         <div class="row2">
           <label class="f">Lote <select name="lote_id"></select></label>
           <label class="f">Origen <select name="origen"><option value="manual">Manual</option><option value="ia">Con IA</option><option value="referencia">Referencia viral</option></select></label>
@@ -301,11 +312,6 @@
       </div>
 
       <div class="side">
-        <div class="calc">
-          <h3>Voto del equipo</h3>
-          <p class="hint" id="votoProm">Sin votos</p>
-          <div id="votos"></div>
-        </div>
         <div class="calc">
           <h3>Calculadora de Viralidad</h3>
           <p class="hint">Marca Sí o No en cada criterio y elige el formato.</p>
@@ -403,9 +409,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="config.js?v=27"></script>
-<script src="app.js?v=27"></script>
-<script src="guiones.js?v=27"></script>
-<script src="ganchos.js?v=27"></script>
+<script src="config.js?v=29"></script>
+<script src="app.js?v=29"></script>
+<script src="guiones.js?v=29"></script>
+<script src="ganchos.js?v=29"></script>
 </body>
 </html>

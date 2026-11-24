@@ -502,16 +502,23 @@ function pintarNivel() {
     h("b", {}, n), h("small", {}, txt))));
 }
 
+// En el detalle de la idea cada persona ve solo su propio voto; Juan Vargas (ADMIN_VOTOS) ve y edita todos
 function pintarVotos() {
   const d = state.borrador;
   const activos = state.votantes.filter(v => v.activo);
-  $("#votos").replaceChildren(...activos.map(vt => filaVoto(vt, d.votos[vt.id], valor => {
+  const todos = esAdminVotos() || !state.usuario;
+  const filas = todos ? activos : activos.filter(v => v.id === state.usuario.id);
+  $("#votoBox").classList.toggle("solo", !todos);
+  $("#votoTit").textContent = todos ? "Voto del equipo" : "Tu voto";
+  $("#votos").replaceChildren(...filas.map(vt => filaVoto(vt, d.votos[vt.id], valor => {
     d.votos[vt.id] = valor;
     pintarVotos();
     if (state.editando) guardarVoto(state.editando.id, vt.id, valor);
   })));
   const vals = Object.values(d.votos).filter(Boolean);
-  $("#votoProm").textContent = vals.length ? `Promedio ★ ${fmt(vals.reduce((a, b) => a + b, 0) / vals.length)} · ${vals.length} voto${vals.length === 1 ? "" : "s"}` : "Sin votos";
+  $("#votoProm").textContent = todos
+    ? (vals.length ? `Promedio ★ ${fmt(vals.reduce((a, b) => a + b, 0) / vals.length)} · ${vals.length} voto${vals.length === 1 ? "" : "s"}` : "Sin votos")
+    : (d.votos[state.usuario.id] ? "Se guardó tu voto. Toca otra estrella para cambiarlo." : "Toca las estrellas: se guarda al instante.");
 }
 
 function pintarParecidas() {
@@ -557,8 +564,16 @@ function abrirIdea(idea) {
   pintarVotos();
   pintarParecidas();
   dlg.showModal();
+  ajustarTexto();
   arriba(dlg);
 }
+// El texto base crece con su contenido para leerse completo sin barra interna
+function ajustarTexto() {
+  const t = form.texto_base;
+  t.style.height = "auto";
+  t.style.height = Math.max(t.scrollHeight + 2, 160) + "px";
+}
+form.texto_base.addEventListener("input", ajustarTexto);
 // Al abrir otra tarjeta, el detalle empieza desde arriba
 function arriba(d) { [d, ...d.querySelectorAll("*")].forEach(e => { if (e.scrollTop) e.scrollTop = 0; }); }
 $("#btnNew").onclick = () => abrirIdea(null);
