@@ -377,16 +377,31 @@ function pintarChipsFiltros() {
 
 const guionDe = i => (state.guiones || []).filter(g => g.idea_id === i.id).sort((a, b) => a.numero - b.numero)[0]
   || ((i.estado === "en_guion" || i.guion_id != null) ? { id: i.guion_id, numero: null } : null);
+const EXPANDIDAS = new Set();
+const DESC_ABIERTO = { v: false };
 function tarjetaIdea(i, umbral, max) {
   const p = Number(i.puntaje_total), v = votosDe(i.id), prom = promedio(v);
   const alto = i.calificada && p >= umbral && i.estado !== "descartada";
   const mio = state.usuario && v.find(x => x.votante_id === state.usuario.id);
   const activos = state.votantes.filter(x => x.activo);
-  return h("article", { class: "idea" + (alto ? " top" : "") + (mio ? " votada" : "") + (guionDe(i) ? " con-guion usada" : "") + (!mio && !guionDe(i) && state.usuario && i.estado !== "descartada" ? " falta-voto" : "") + (i.estado === "descartada" ? " descartada" : ""), tabindex: 0,
-    onclick: () => abrirIdea(i), onkeydown: e => { if (e.key === "Enter") abrirIdea(i); } },
+  // En celular la ficha empieza comprimida; la flecha la expande (se recuerda mientras no se recargue)
+  const abierta = EXPANDIDAS.has(i.id);
+  const plegar = h("button", { type: "button", class: "plegar", "aria-expanded": String(abierta), "aria-label": abierta ? "Comprimir ficha" : "Expandir ficha",
+    onclick: ev => { ev.stopPropagation(); const art = ev.currentTarget.closest(".idea"); const a = art.classList.toggle("abierta");
+      a ? EXPANDIDAS.add(i.id) : EXPANDIDAS.delete(i.id); ev.currentTarget.setAttribute("aria-expanded", String(a)); ev.currentTarget.setAttribute("aria-label", a ? "Comprimir ficha" : "Expandir ficha"); } }, "▾");
+  return h("article", { class: "idea" + (abierta ? " abierta" : "") + (alto ? " top" : "") + (mio ? " votada" : "") + (guionDe(i) ? " con-guion usada" : "") + (!mio && !guionDe(i) && state.usuario && i.estado !== "descartada" ? " falta-voto" : "") + (i.estado === "descartada" ? " descartada" : ""), tabindex: 0,
+    onclick: () => abrirIdea(i), onkeydown: e => { if (e.key === "Enter" && e.target === e.currentTarget) abrirIdea(i); } },
     guionDe(i) && h("span", { class: "cinta-guion", "aria-hidden": "true" }, `EN GUION ${guionDe(i).numero ?? ""}`),
     h("div", { class: "cuerpo" },
-      h("div", { class: "head" }, h("span", { class: "num" }, i.numero ?? "–"), h("h3", {}, i.titulo)),
+      h("div", { class: "head" }, h("span", { class: "num" }, i.numero ?? "–"), h("h3", {}, i.titulo), plegar),
+      // Resumen de una línea que se ve solo con la ficha comprimida (celular)
+      h("div", { class: "resumen" },
+        guionDe(i) ? h("span", { class: "r-guion" }, `GUION ${guionDe(i).numero ?? ""}`)
+          : mio ? h("span", { class: "r-voto" }, `✓ ★${mio.puntaje}`)
+          : i.estado !== "descartada" && state.usuario ? h("span", { class: "r-falta" }, "Falta tu voto") : null,
+        h("span", {}, `★ ${prom != null ? fmt(prom) : "–"}`),
+        h("span", {}, `${i.calificada ? fmt(p) : "–"}/${fmt(max)}`),
+        h("span", {}, `${v.length}/${activos.length} votos`)),
       h("div", { class: "chips" },
         guionDe(i) && h("span", { class: "chip guion-tag", title: "Abrir el guion", onclick: ev => { ev.stopPropagation(); window.__logi.abrirGuion?.(guionDe(i).id); } }, `GUION ${guionDe(i).numero ?? ""}`),
         mio && h("span", { class: "chip votaste" }, `✓ Votaste ★${mio.puntaje}`),
@@ -444,9 +459,14 @@ function pintarIdeas() {
     h("span", {}, h("b", {}, state.ideas.filter(enGuion).length), "en guion"),
     h("span", {}, h("b", {}, state.lotes.length), state.lotes.length === 1 ? "lote" : "lotes"));
 
+  // Las descartadas van al final, juntas en un desplegable (salvo que se filtre justo por «Descartada»)
+  const aparte = fe !== "descartada";
+  const descartadas = aparte ? activas.filter(i => i.estado === "descartada" && !enGuion(i)).sort(por) : [];
+  const visibles = aparte ? activas.filter(i => !(i.estado === "descartada" && !enGuion(i))) : activas;
+
   // Agrupar por lote, el más reciente primero
   const grupos = new Map();
-  for (const i of activas) {
+  for (const i of visibles) {
     const k = i.lote_id ?? 0;
     if (!grupos.has(k)) grupos.set(k, []);
     grupos.get(k).push(i);
@@ -465,6 +485,11 @@ function pintarIdeas() {
         h("span", { class: "lote-n" }, `${lista.length} idea${lista.length === 1 ? "" : "s"}`)),
       h("div", { class: "list" }, lista.map(i => tarjetaIdea(i, umbral, max))));
   });
+
+  if (descartadas.length) bloques.push(h("details", { class: "grupo-descartadas", open: DESC_ABIERTO.v,
+    ontoggle: e => { DESC_ABIERTO.v = e.currentTarget.open; } },
+    h("summary", {}, h("span", {}, "Descartadas"), h("span", { class: "lote-n" }, `${descartadas.length} idea${descartadas.length === 1 ? "" : "s"}`)),
+    h("div", { class: "list" }, descartadas.map(i => tarjetaIdea(i, umbral, max)))));
 
   const cont = [];
   if (!bloques.length) cont.push(h("div", { class: "empty" },

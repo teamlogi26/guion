@@ -152,13 +152,21 @@ let plegados = new Set();
 try { plegados = new Set(JSON.parse(localStorage.getItem(CLAVE_PLEGADOS) || "[]")); } catch { /* sin almacenamiento */ }
 const guardarPlegados = () => { try { localStorage.setItem(CLAVE_PLEGADOS, JSON.stringify([...plegados])); } catch { /* sin almacenamiento */ } };
 
+const G_EXPANDIDOS = new Set();
 function tarjetaGuion(g) {
   const dur = Number(g.duracion_estimada_s), max = Number(g.duracion_max_s) || 30;
-  const art = h("article", { class: "gcard g-est", "data-estado": estadoDe(g), "data-id": g.id },
+  // En celular la ficha empieza comprimida; la flecha la expande
+  const abierta = G_EXPANDIDOS.has(g.id);
+  const plegar = h("button", { type: "button", class: "plegar", "aria-expanded": String(abierta), "aria-label": abierta ? "Comprimir ficha" : "Expandir ficha",
+    onclick: ev => { const a = art.classList.toggle("abierta"); a ? G_EXPANDIDOS.add(g.id) : G_EXPANDIDOS.delete(g.id);
+      ev.currentTarget.setAttribute("aria-expanded", String(a)); ev.currentTarget.setAttribute("aria-label", a ? "Comprimir ficha" : "Expandir ficha"); } }, "▾");
+  const art = h("article", { class: "gcard g-est" + (abierta ? " abierta" : ""), "data-estado": estadoDe(g), "data-id": g.id },
     h("div", { class: "gnum" }, String(g.numero ?? "–").padStart(2, "0")),
     h("div", { class: "gbody" },
       origenIdea(g),
-      h("h3", {}, g.titulo),
+      h("div", { class: "g-tit" }, h("h3", {}, g.titulo), plegar),
+      h("div", { class: "resumen" }, pildora(estadoDe(g), "mini"), h("span", {}, `≈ ${dur} s`),
+        h("span", {}, `Grabado ${g.escenas_grabadas ?? 0}/${g.escenas ?? 0}`)),
       h("div", { class: "chips" },
         g.pilar && h("span", { class: "chip " + pilarClass(g.pilar) }, g.pilar),
         g.tematica && h("span", { class: "chip" }, g.tematica),
