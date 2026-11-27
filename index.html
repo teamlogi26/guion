@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=35">
+<link rel="stylesheet" href="styles.css?v=41">
 </head>
 <body>
 <div class="glow" id="glow"></div>
@@ -67,6 +67,22 @@
       </div>
     </div>
   </header>
+
+  <!-- Barra inferior (solo en celular) -->
+  <nav class="tabbar" id="tabbar" aria-label="Secciones">
+    <button type="button" data-view="ideas"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg><span>Ideas</span></button>
+    <button type="button" data-view="guiones"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg><span>Guiones</span></button>
+    <button type="button" data-view="storyboard"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 4v16"/></svg><span>Storyboard</span></button>
+    <button type="button" data-view="teleprompter"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h10M4 18h7"/><path d="M17 15l4 2.5-4 2.5z"/></svg><span>Prompter</span></button>
+    <button type="button" id="tbMas" aria-expanded="false" aria-controls="masSheet"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/></svg><span>Más</span></button>
+  </nav>
+  <div class="mas-fondo" id="masFondo" hidden></div>
+  <div class="mas-sheet" id="masSheet" hidden>
+    <button type="button" data-view="ganchos">Ganchos y CTA</button>
+    <button type="button" data-view="ajustes">Ajustes</button>
+    <a href="proceso.html">Proceso de creación</a>
+    <button type="button" id="masUsuario">Cambiar de usuario</button>
+  </div>
 
   <main>
     <!-- Ideas -->
@@ -270,11 +286,11 @@
           <div class="tp-cuenta" id="tpCuentaNum" hidden></div>
         </div>
         <div class="tp-bar">
-          <button type="button" class="btn" id="tpReiniciar" title="Volver al inicio (R)">↺ Inicio</button>
+          <button type="button" class="btn" id="tpReiniciar" title="Volver al inicio (R)" aria-label="Volver al inicio">↺<span class="tp-txt"> Inicio</span></button>
           <button type="button" class="btn primary tp-play" id="tpPlay">▶ Iniciar</button>
-          <button type="button" class="btn" id="tpMenos" title="Más lento (↓)">− Lento</button>
-          <button type="button" class="btn" id="tpMas" title="Más rápido (↑)">+ Rápido</button>
-          <button type="button" class="btn" id="tpPantalla" title="Pantalla completa (F)">⛶ Pantalla completa</button>
+          <button type="button" class="btn" id="tpMenos" title="Más lento (↓)" aria-label="Más lento">−<span class="tp-txt"> Lento</span></button>
+          <button type="button" class="btn" id="tpMas" title="Más rápido (↑)" aria-label="Más rápido">+<span class="tp-txt"> Rápido</span></button>
+          <button type="button" class="btn" id="tpPantalla" title="Pantalla completa (F)" aria-label="Pantalla completa">⛶<span class="tp-txt"> Pantalla completa</span></button>
         </div>
       </div>
       <p class="hint">Atajos: <b>Espacio</b> inicia o pausa · <b>↑ ↓</b> velocidad · <b>R</b> vuelve al inicio · <b>F</b> pantalla completa. En el celular, toca el texto para pausar. Lo que está entre paréntesis y las guías salen en gris: son indicaciones, no se leen.</p>
@@ -449,10 +465,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="config.js?v=35"></script>
-<script src="app.js?v=35"></script>
-<script src="guiones.js?v=35"></script>
-<script src="ganchos.js?v=35"></script>
-<script src="teleprompter.js?v=35"></script>
+<script src="config.js?v=41"></script>
+<script src="app.js?v=41"></script>
+<script src="guiones.js?v=41"></script>
+<script src="ganchos.js?v=41"></script>
+<script src="teleprompter.js?v=41"></script>
 </body>
 </html>

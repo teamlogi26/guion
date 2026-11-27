@@ -144,7 +144,7 @@ function abrirApp() {
     $("#cambiarUsuario").hidden = false;
   }
   const h0 = location.hash.slice(1);
-  irA(TONOS[h0] ? h0 : "ideas");
+  irA(TONOS[h0] || h0 === "teleprompter" ? h0 : "ideas");
 }
 
 // ---------- usuario (sin contraseña): quién vota ----------
@@ -263,7 +263,9 @@ const TONOS = {
 const vistas = { ideas: () => recargarIdeas() };   // cada pestaña registra aquí su función de carga
 function irA(vista, sinCargar) {
   if (!sinCargar && vistas[vista]) vistas[vista]();
-  $$("#tabs button[data-view]").forEach(b => b.setAttribute("aria-selected", b.dataset.view === vista));
+  $$("#tabs button[data-view], #tabbar button[data-view], #masSheet button[data-view]").forEach(b => b.setAttribute("aria-selected", b.dataset.view === vista));
+  $("#tbMas")?.classList.toggle("activo", vista === "ganchos" || vista === "ajustes");
+  cerrarMas();
   $$(".view").forEach(v => v.hidden = v.id !== "view-" + vista);
   if (!TONOS[vista]) { history.replaceState(null, "", "#" + vista); return; }
   const [c1, c2, x1, y1, x2, y2] = TONOS[vista];
@@ -274,6 +276,13 @@ function irA(vista, sinCargar) {
   history.replaceState(null, "", "#" + vista);
 }
 $$("#tabs button[data-view]").forEach(b => b.onclick = () => irA(b.dataset.view));
+// Celular: barra inferior y menú «Más»
+function cerrarMas() { const m = $("#masSheet"); if (!m) return; m.hidden = true; $("#masFondo").hidden = true; $("#tbMas").setAttribute("aria-expanded", "false"); }
+$$("#tabbar button[data-view], #masSheet button[data-view]").forEach(b => b.onclick = () => { irA(b.dataset.view); scrollTo(0, 0); });
+$("#tbMas").onclick = () => { const abrir = $("#masSheet").hidden; $("#masSheet").hidden = !abrir; $("#masFondo").hidden = !abrir; $("#tbMas").setAttribute("aria-expanded", String(abrir)); };
+$("#masFondo").onclick = cerrarMas;
+$("#masUsuario").onclick = () => { cerrarMas(); $("#cambiarUsuario").click(); };
+addEventListener("keydown", e => { if (e.key === "Escape") cerrarMas(); });
 
 // ---------- utilidades de ideas ----------
 const dosD = n => String(n).padStart(2, "0");

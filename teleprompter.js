@@ -118,11 +118,17 @@ ventana.addEventListener("touchmove", e => { if (!toque) return; const d = toque
 ventana.addEventListener("touchend", e => { if (toque?.movio) e.preventDefault(); toque = null; });
 
 const marco = $("#tpMarco");
+// En iPhone no existe la pantalla completa para estos elementos: se simula ocupando toda la pantalla
+const pseudo = on => { marco.classList.toggle("lleno", on); document.body.classList.toggle("tp-lleno", on); $("#tpPantalla").innerHTML = on ? '✕<span class="tp-txt"> Salir</span>' : '⛶<span class="tp-txt"> Pantalla completa</span>'; requestAnimationFrame(mover); };
 $("#tpPantalla").onclick = () => {
-  if (document.fullscreenElement) document.exitFullscreen?.();
-  else (marco.requestFullscreen || marco.webkitRequestFullscreen)?.call(marco);
+  if (document.fullscreenElement) return document.exitFullscreen?.();
+  if (marco.classList.contains("lleno")) return pseudo(false);
+  const pedir = marco.requestFullscreen || marco.webkitRequestFullscreen;
+  if (pedir) Promise.resolve(pedir.call(marco)).catch(() => pseudo(true));
+  else pseudo(true);
 };
-document.addEventListener("fullscreenchange", () => { marco.classList.toggle("lleno", document.fullscreenElement === marco); mover(); });
+addEventListener("resize", () => requestAnimationFrame(mover));
+document.addEventListener("fullscreenchange", () => pseudo(document.fullscreenElement === marco));
 
 document.addEventListener("keydown", e => {
   if ($("#view-teleprompter").hidden || /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName) || document.querySelector("dialog[open]")) return;
@@ -131,6 +137,7 @@ document.addEventListener("keydown", e => {
   else if (e.key === "ArrowDown") { e.preventDefault(); velocidad(-1); }
   else if (e.key === "r" || e.key === "R") reiniciar();
   else if (e.key === "f" || e.key === "F") $("#tpPantalla").click();
+  else if (e.key === "Escape" && marco.classList.contains("lleno") && !document.fullscreenElement) pseudo(false);
 });
 
 // ---------- vista ----------
@@ -146,7 +153,7 @@ async function vista() {
 }
 L.vistas.teleprompter = vista;
 // Al salir de la pestaña se pausa
-new MutationObserver(() => { if ($("#view-teleprompter").hidden) pausar(); })
+new MutationObserver(() => { if ($("#view-teleprompter").hidden) { pausar(); if (marco.classList.contains("lleno") && !document.fullscreenElement) pseudo(false); } })
   .observe($("#view-teleprompter"), { attributes: true, attributeFilter: ["hidden"] });
 aplicar();
 })();
