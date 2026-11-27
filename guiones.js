@@ -255,6 +255,8 @@ async function crearGuion(idea) {
 L.crearGuion = crearGuion;
 L.cargarGuiones = cargarGuiones;
 L.G = G;
+L.cargarEscenas = cargarEscenas;
+L.porMes = lista => porMes(lista);
 L.abrirGuion = id => abrirEditor(id);
 
 // =====================================================================

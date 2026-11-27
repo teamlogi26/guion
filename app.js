@@ -265,6 +265,7 @@ function irA(vista, sinCargar) {
   if (!sinCargar && vistas[vista]) vistas[vista]();
   $$("#tabs button[data-view]").forEach(b => b.setAttribute("aria-selected", b.dataset.view === vista));
   $$(".view").forEach(v => v.hidden = v.id !== "view-" + vista);
+  if (!TONOS[vista]) { history.replaceState(null, "", "#" + vista); return; }
   const [c1, c2, x1, y1, x2, y2] = TONOS[vista];
   const st = $("#glow").style;
   st.setProperty("--g1", c1); st.setProperty("--g2", c2);
@@ -834,6 +835,7 @@ $("#savePesos").onclick = async () => {
 // ---------- partículas de fondo ----------
 (() => {
   const cv = $("#particles"), ctx = cv.getContext("2d");
+  if (getComputedStyle(cv).display === "none") return;   // el estilo de grabación no usa partículas
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const fit = () => { cv.width = innerWidth; cv.height = innerHeight; };
   addEventListener("resize", fit); fit();

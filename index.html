@@ -7,8 +7,8 @@
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=30">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css?v=35">
 </head>
 <body>
 <div class="glow" id="glow"></div>
@@ -58,6 +58,7 @@
         <button role="tab" data-view="guiones">Guiones</button>
         <button role="tab" data-view="ganchos">Ganchos y CTA</button>
         <button role="tab" data-view="storyboard">Storyboard</button>
+        <button role="tab" data-view="teleprompter">Teleprompter</button>
         <button role="tab" data-view="ajustes">Ajustes</button>
       </nav>
       <div class="nav-right">
@@ -240,6 +241,45 @@
       <div id="sbHojas"></div>
     </section>
 
+    <!-- Teleprompter -->
+    <section class="view cloud" id="view-teleprompter" hidden>
+      <div class="view-head">
+        <div>
+          <div class="eyebrow">Paso 8 · A la hora de grabar</div>
+          <h2>Teleprompter</h2>
+        </div>
+      </div>
+      <div class="tp-ctrl">
+        <label class="tp-f tp-guion">Guion <select id="tpGuion"></select></label>
+        <label class="tp-f">Velocidad <span class="tp-val" id="tpVelVal"></span><input type="range" id="tpVel" min="1" max="10" step="1"></label>
+        <label class="tp-f">Tamaño <span class="tp-val" id="tpTamVal"></span><input type="range" id="tpTam" min="28" max="96" step="2"></label>
+        <div class="tp-sw">
+          <label><input type="checkbox" id="tpEspejo"> Espejo</label>
+          <label><input type="checkbox" id="tpEscenas"> Ver escenas</label>
+          <label><input type="checkbox" id="tpCuenta"> Cuenta 3-2-1</label>
+        </div>
+      </div>
+      <div class="tp-marco" id="tpMarco">
+        <div class="tp-top">
+          <span class="tp-rec" id="tpRec">● REC</span>
+          <span class="tp-reloj" id="tpReloj">00:00 / 00:00</span>
+        </div>
+        <div class="tp-ventana" id="tpVentana" tabindex="0" aria-label="Texto del teleprompter. Espacio para iniciar o pausar.">
+          <div class="tp-linea" aria-hidden="true"></div>
+          <div class="tp-texto" id="tpTexto"></div>
+          <div class="tp-cuenta" id="tpCuentaNum" hidden></div>
+        </div>
+        <div class="tp-bar">
+          <button type="button" class="btn" id="tpReiniciar" title="Volver al inicio (R)">↺ Inicio</button>
+          <button type="button" class="btn primary tp-play" id="tpPlay">▶ Iniciar</button>
+          <button type="button" class="btn" id="tpMenos" title="Más lento (↓)">− Lento</button>
+          <button type="button" class="btn" id="tpMas" title="Más rápido (↑)">+ Rápido</button>
+          <button type="button" class="btn" id="tpPantalla" title="Pantalla completa (F)">⛶ Pantalla completa</button>
+        </div>
+      </div>
+      <p class="hint">Atajos: <b>Espacio</b> inicia o pausa · <b>↑ ↓</b> velocidad · <b>R</b> vuelve al inicio · <b>F</b> pantalla completa. En el celular, toca el texto para pausar. Lo que está entre paréntesis y las guías salen en gris: son indicaciones, no se leen.</p>
+    </section>
+
     <!-- Ajustes -->
     <section class="view cloud" id="view-ajustes" hidden>
       <div class="view-head">
@@ -409,9 +449,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="config.js?v=30"></script>
-<script src="app.js?v=30"></script>
-<script src="guiones.js?v=30"></script>
-<script src="ganchos.js?v=30"></script>
+<script src="config.js?v=35"></script>
+<script src="app.js?v=35"></script>
+<script src="guiones.js?v=35"></script>
+<script src="ganchos.js?v=35"></script>
+<script src="teleprompter.js?v=35"></script>
 </body>
 </html>
